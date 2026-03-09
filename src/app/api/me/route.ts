@@ -40,15 +40,7 @@ export async function PATCH(request: Request) {
       preferredLeagues?: string[];
       bio?: string | null;
     };
-    const data: {
-      listed?: boolean;
-      gamertag?: string | null;
-      role?: string | null;
-      platform?: string | null;
-      preferredPositions?: string;
-      preferredLeagues?: string;
-      bio?: string | null;
-    } = {};
+    const data: Parameters<typeof prisma.player.update>[0]["data"] = {};
     if (typeof listed === "boolean") data.listed = listed;
     if (gamertag !== undefined) data.gamertag = gamertag?.trim() || null;
     if (role !== undefined) data.role = role?.trim() || "Player";
