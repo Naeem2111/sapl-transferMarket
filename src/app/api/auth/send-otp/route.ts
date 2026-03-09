@@ -1,0 +1,66 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { toFullNumber, normalizedFormsForMatch } from "@/lib/phone";
+import { generateOtpCode, getOtpExpiry } from "@/lib/otp";
+import { sendSms } from "@/lib/sms";
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { dialingCode, phoneNumber } = body as {
+      dialingCode: string;
+      phoneNumber: string;
+    };
+    const full = toFullNumber(dialingCode || "", phoneNumber || "");
+    if (!full) {
+      return NextResponse.json(
+        { error: "Phone number (with dialing code) required" },
+        { status: 400 }
+      );
+    }
+    const allPlayers = await prisma.player.findMany({
+      where: {
+        OR: [
+          { mobilePhone: { not: null } },
+          { workPhone: { not: null } },
+          { homePhone: { not: null } },
+        ],
+      },
+    });
+    const player = allPlayers.find((p) => {
+      const phones = [p.mobilePhone, p.workPhone, p.homePhone].filter(Boolean) as string[];
+      for (const ph of phones) {
+        const forms = normalizedFormsForMatch(ph);
+        if (forms.includes(full)) return true;
+      }
+      return false;
+    });
+    if (!player) {
+      return NextResponse.json(
+        { error: "No player found with this phone number. Your number must be in the LeagueRepublic import." },
+        { status: 404 }
+      );
+    }
+    const code = generateOtpCode();
+    const expiresAt = getOtpExpiry();
+    await prisma.pendingOtp.upsert({
+      where: { phone: full },
+      create: { phone: full, code, expiresAt },
+      update: { code, expiresAt },
+    });
+    const smsResult = await sendSms(
+      full,
+      `Your SAPL Transfer Market verification code is: ${code}. It expires in 10 minutes.`
+    );
+    if (!smsResult.ok) {
+      return NextResponse.json(
+        { error: "Failed to send SMS. Please try again later." },
+        { status: 502 }
+      );
+    }
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}

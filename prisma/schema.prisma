@@ -1,0 +1,86 @@
+// Pro Clubs Transfer Market - LeagueRepublic data + listing
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Auth: sign in with phone (dialing code + number)
+  authPhone    String?  @unique // normalized digits, e.g. 27718665667
+  passwordHash String?
+
+  // LeagueRepublic CSV fields (PERSON_3377)
+  personId    String   @unique // Person ID from LeagueRepublic
+  role        String   @default("Player")
+  teams       String?  // comma-separated or single
+  activeFrom  String?
+  activeTo    String?
+  userName    String?  // LeagueRepublic User Name (gamer tag)
+  lastName    String?
+  firstName   String?
+  email       String?
+  workPhone   String?
+  homePhone   String?
+  mobilePhone String?
+  status      String?  @default("Active")
+  dob         String?
+  houseNo     String?
+  houseName   String?
+  addr1       String?
+  addr2       String?
+  addr3       String?
+  city        String?
+  county      String?
+  postcode    String?
+  internalRef1 String?
+  internalRef2 String?
+
+  // Transfer market relations
+  trialRequestsAsPlayer TrialRequest[] @relation("PlayerRequests")
+
+  // Transfer market fields
+  listed             Boolean  @default(false) // only show in market when true
+  gamertag           String?  // display on market (e.g. PSN/EA tag) instead of userName when set
+  preferredPositions String   @default("[]") // JSON array e.g. ["ST","CAM","CM"]
+  preferredLeagues   String   @default("[]") // JSON array of league names
+  bio                String?  // optional short bio
+}
+
+model PendingOtp {
+  id        String   @id @default(cuid())
+  phone     String   @unique // normalized e.g. 27718665667
+  code      String   // 6 digits
+  expiresAt DateTime
+}
+
+model Captain {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  email        String   @unique
+  passwordHash String
+  teamName     String?  // e.g. "Azzurri Esports"
+
+  trialRequests TrialRequest[]
+}
+
+model TrialRequest {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  captainId String
+  captain   Captain  @relation(fields: [captainId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    Player   @relation("PlayerRequests", fields: [playerId], references: [id], onDelete: Cascade)
+  message   String?  // optional message from captain
+  status    String   @default("pending") // pending | accepted | declined
+
+  @@unique([captainId, playerId])
+}
