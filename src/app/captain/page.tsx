@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { POSITIONS } from "@/lib/positions";
+import { DEFAULT_LEAGUES } from "@/lib/leagues";
+import { PLATFORMS } from "@/lib/platforms";
+import { ROLES } from "@/lib/roles";
 
 type TrialRequestRow = {
   id: string;
@@ -22,9 +26,31 @@ type TrialRequestRow = {
 
 export default function CaptainPage() {
   const router = useRouter();
-  const [captain, setCaptain] = useState<{ email: string; teamName: string | null } | null>(null);
+  const [captain, setCaptain] = useState<{
+    email: string;
+    teamName: string | null;
+    platform: string | null;
+    preferredLeagues: string[];
+    preferredPositions: string[];
+    role: string | null;
+    clubStatus: string | null;
+    trialGroupLink: string | null;
+    requirements: string | null;
+    whatsappNumber: string | null;
+  } | null>(null);
   const [requests, setRequests] = useState<TrialRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [platform, setPlatform] = useState("");
+  const [preferredLeagues, setPreferredLeagues] = useState<string[]>([]);
+  const [preferredPositions, setPreferredPositions] = useState<string[]>([]);
+  const [role, setRole] = useState("");
+  const [clubStatus, setClubStatus] = useState("");
+  const [trialGroupLink, setTrialGroupLink] = useState("");
+  const [requirements, setRequirements] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
 
   useEffect(() => {
     fetch("/api/captain/me", { credentials: "include" })
@@ -34,7 +60,15 @@ export default function CaptainPage() {
           router.replace("/captain/login");
           return;
         }
-        setCaptain({ email: data.email, teamName: data.teamName });
+        setCaptain(data);
+        setPlatform(data.platform ?? "");
+        setPreferredLeagues(Array.isArray(data.preferredLeagues) ? data.preferredLeagues : []);
+        setPreferredPositions(Array.isArray(data.preferredPositions) ? data.preferredPositions : []);
+        setRole(data.role ?? "");
+        setClubStatus(data.clubStatus ?? "");
+        setTrialGroupLink(data.trialGroupLink ?? "");
+        setRequirements(data.requirements ?? "");
+        setWhatsappNumber(data.whatsappNumber ?? "");
       })
       .catch(() => router.replace("/captain/login"));
   }, [router]);
@@ -49,17 +83,74 @@ export default function CaptainPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  function toggleLeague(league: string) {
+    setPreferredLeagues((prev) =>
+      prev.includes(league) ? prev.filter((l) => l !== league) : [...prev, league]
+    );
+  }
+
+  function togglePosition(pos: string) {
+    setPreferredPositions((prev) =>
+      prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
+    );
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/captain/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          platform: platform.trim() || null,
+          preferredLeagues,
+          preferredPositions,
+          role: role.trim() || null,
+          clubStatus: clubStatus.trim() || null,
+          trialGroupLink: trialGroupLink.trim() || null,
+          requirements: requirements.trim() || null,
+          whatsappNumber: whatsappNumber.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) setCaptain(data);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   if (!captain) return null;
 
   const displayName = (p: TrialRequestRow["player"]) =>
     [p.firstName, p.lastName].filter(Boolean).join(" ") || p.userName || "Player";
 
+  const CLUB_STATUSES = [
+    "Free agents only",
+    "Will pay transfer fee (R200)",
+    "Open to both",
+  ];
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[var(--text)]">Captain</h1>
-        <Link href="/market" className="btn-primary">Browse market</Link>
+        <div className="flex gap-2">
+          <Link href="/market" className="btn-primary">Browse market</Link>
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={async () => {
+              await fetch("/api/captain/logout", { method: "POST" });
+              router.push("/");
+              router.refresh();
+            }}
+          >
+            Log out
+          </button>
+        </div>
       </div>
+
       <div className="card">
         <h2 className="font-semibold text-[var(--text)]">Account</h2>
         <p className="mt-1 text-[var(--muted)]">{captain.email}</p>
@@ -67,12 +158,141 @@ export default function CaptainPage() {
           <p className="mt-1 text-[var(--text)]">Team: {captain.teamName}</p>
         )}
       </div>
+
+      {/* Listing details used to generate the WhatsApp post */}
+      <div className="card space-y-4">
+        <h2 className="font-semibold text-[var(--text)]">Looking for a player — listing info</h2>
+        <p className="text-sm text-[var(--muted)]">
+          Fill in these details so an admin can generate and post a <em>Looking For A Player</em> post on the WhatsApp group on your behalf.
+        </p>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">WhatsApp number</label>
+          <p className="mb-1 text-xs text-[var(--muted)]">Include dialling code, e.g. +27821234567</p>
+          <input
+            type="text"
+            className="input max-w-xs"
+            value={whatsappNumber}
+            onChange={(e) => setWhatsappNumber(e.target.value)}
+            placeholder="+27821234567"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Platform</label>
+          <select
+            className="input mt-1 max-w-xs"
+            value={platform}
+            onChange={(e) => setPlatform(e.target.value)}
+          >
+            <option value="">Select platform</option>
+            {PLATFORMS.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Role needed</label>
+          <select
+            className="input mt-1 max-w-xs"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+          >
+            <option value="">Any</option>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Leagues</label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {DEFAULT_LEAGUES.map((league) => (
+              <button
+                key={league}
+                type="button"
+                onClick={() => toggleLeague(league)}
+                className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+                  preferredLeagues.includes(league)
+                    ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
+                    : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+                }`}
+              >
+                {league}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Positions needed</label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {POSITIONS.map((pos) => (
+              <button
+                key={pos}
+                type="button"
+                onClick={() => togglePosition(pos)}
+                className={`rounded-lg border px-3 py-1.5 text-sm transition ${
+                  preferredPositions.includes(pos)
+                    ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
+                    : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+                }`}
+              >
+                {pos}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Club status</label>
+          <p className="mb-1 text-xs text-[var(--muted)]">Are you willing to pay the R200 transfer fee for club-signed players?</p>
+          <select
+            className="input mt-1 max-w-xs"
+            value={clubStatus}
+            onChange={(e) => setClubStatus(e.target.value)}
+          >
+            <option value="">Select…</option>
+            {CLUB_STATUSES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Trial group link</label>
+          <input
+            type="text"
+            className="input"
+            value={trialGroupLink}
+            onChange={(e) => setTrialGroupLink(e.target.value)}
+            placeholder="https://chat.whatsapp.com/..."
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Requirements / extra info</label>
+          <textarea
+            className="input min-h-[80px] resize-y"
+            value={requirements}
+            onChange={(e) => setRequirements(e.target.value)}
+            placeholder="e.g. Must be available Tue/Thu evenings, competitive mindset..."
+          />
+        </div>
+
+        <button onClick={handleSave} className="btn-primary w-full" disabled={saving}>
+          {saving ? "Saving…" : "Save listing info"}
+        </button>
+      </div>
+
       <div className="card">
         <h2 className="font-semibold text-[var(--text)]">Your trial requests</h2>
         {loading ? (
           <p className="mt-2 text-[var(--muted)]">Loading…</p>
         ) : requests.length === 0 ? (
-          <p className="mt-2 text-[var(--muted)]">You haven’t requested any trials yet.</p>
+          <p className="mt-2 text-[var(--muted)]">You haven't requested any trials yet.</p>
         ) : (
           <ul className="mt-3 space-y-3">
             {requests.map((r) => (

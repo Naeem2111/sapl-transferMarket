@@ -53,6 +53,7 @@ model Player {
   preferredPositions String   @default("[]") // JSON array e.g. ["ST","CAM","CM"]
   preferredLeagues   String   @default("[]") // JSON array of league names
   bio                String?  // optional short bio
+  previousClub       String?  // most recent club, blank = free agent
 }
 
 model PendingOtp {
@@ -70,7 +71,24 @@ model Captain {
   passwordHash String
   teamName     String?  // e.g. "Azzurri Esports"
 
+  // Looking-for-player listing fields (used to generate WhatsApp posts)
+  platform           String?
+  preferredLeagues   String   @default("[]") // JSON array
+  preferredPositions String   @default("[]") // JSON array
+  role               String?  // role they need: Starter | Rotation
+  clubStatus         String?  // Free agents only | Will pay transfer fee (R200) | Open to both
+  trialGroupLink     String?  // WhatsApp trial group invite link
+  requirements       String?  // free-text requirements / extra info
+  whatsappNumber     String?  // captain's contact number for the post
+
   trialRequests TrialRequest[]
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  email        String   @unique
+  passwordHash String
 }
 
 model TrialRequest {

@@ -31,6 +31,7 @@ export async function PATCH(request: Request) {
       preferredPositions,
       preferredLeagues,
       bio,
+      previousClub,
     } = body as {
       listed?: boolean;
       gamertag?: string | null;
@@ -39,7 +40,9 @@ export async function PATCH(request: Request) {
       preferredPositions?: string[];
       preferredLeagues?: string[];
       bio?: string | null;
+      previousClub?: string | null;
     };
+
     const data: Parameters<typeof prisma.player.update>[0]["data"] = {};
     if (typeof listed === "boolean") data.listed = listed;
     if (gamertag !== undefined) data.gamertag = gamertag?.trim() || null;
@@ -48,6 +51,8 @@ export async function PATCH(request: Request) {
     if (Array.isArray(preferredPositions)) data.preferredPositions = JSON.stringify(preferredPositions);
     if (Array.isArray(preferredLeagues)) data.preferredLeagues = JSON.stringify(preferredLeagues);
     if (bio !== undefined) data.bio = bio ?? null;
+    if (previousClub !== undefined) data.previousClub = previousClub?.trim() || null;
+
     const updated = await prisma.player.update({
       where: { id: player.id },
       data,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DEFAULT_LEAGUES } from "@/lib/leagues";
 import { POSITIONS } from "@/lib/positions";
 import { PLATFORMS } from "@/lib/platforms";
+import { ROLES } from "@/lib/roles";
 
 type MarketPlayer = {
   id: string;
@@ -18,25 +19,46 @@ type MarketPlayer = {
   bio: string | null;
   updatedAt: string;
   whatsappLink?: string | null;
+  whatsappNumber?: string | null;
+  previousClub?: string | null;
   alreadyRequestedTrial?: boolean;
+};
+
+type CaptainCard = {
+  id: string;
+  email: string;
+  teamName: string | null;
+  platform: string | null;
+  preferredLeagues: string[];
+  role: string | null;
+  preferredPositions: string[];
+  clubStatus: string | null;
+  trialGroupLink: string | null;
+  requirements: string | null;
+  whatsappNumber: string | null;
 };
 
 export default function MarketPage() {
   const [players, setPlayers] = useState<MarketPlayer[]>([]);
+  const [captains, setCaptains] = useState<CaptainCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterLeague, setFilterLeague] = useState("");
   const [filterPosition, setFilterPosition] = useState("");
   const [filterPlatform, setFilterPlatform] = useState("");
+  const [filterRole, setFilterRole] = useState("");
   const [isCaptain, setIsCaptain] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [requestingId, setRequestingId] = useState<string | null>(null);
   const [trialMessage, setTrialMessage] = useState("");
   const [modalPlayer, setModalPlayer] = useState<MarketPlayer | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (filterLeague) params.set("league", filterLeague);
     if (filterPosition) params.set("position", filterPosition);
     if (filterPlatform) params.set("platform", filterPlatform);
+    if (filterRole) params.set("role", filterRole);
     fetch(`/api/market?${params}`, { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
@@ -44,13 +66,30 @@ export default function MarketPage() {
         else setPlayers([]);
       })
       .finally(() => setLoading(false));
-  }, [filterLeague, filterPosition, filterPlatform]);
+  }, [filterLeague, filterPosition, filterPlatform, filterRole]);
 
   useEffect(() => {
     fetch("/api/captain/me", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => setIsCaptain(!data.error))
       .catch(() => setIsCaptain(false));
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/admin/me", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.error) {
+          setIsAdmin(true);
+          // Load captain cards for admin
+          fetch("/api/admin/captains", { credentials: "include" })
+            .then((r) => r.json())
+            .then((d) => {
+              if (Array.isArray(d)) setCaptains(d);
+            });
+        }
+      })
+      .catch(() => setIsAdmin(false));
   }, []);
 
   async function handleRequestTrial(playerId: string) {
@@ -80,6 +119,47 @@ export default function MarketPage() {
     } finally {
       setRequestingId(null);
     }
+  }
+
+  function copyToClipboard(text: string, id: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  }
+
+  function buildPlayerPost(p: MarketPlayer): string {
+    const name = [p.firstName, p.lastName].filter(Boolean).join(" ") || p.gamertag || "Player";
+    const lines = [
+      "*Looking For A Team*",
+      `Name: ${name}`,
+      `Gamertag: ${p.gamertag || "—"}`,
+      `League: ${p.preferredLeagues.join(", ") || "—"}`,
+      `Platform: ${p.platform || "—"}`,
+      `Role: ${p.role || "—"}`,
+      `Position: ${p.preferredPositions.join(", ") || "—"}`,
+      `Previous Club: ${p.previousClub || "—"}`,
+      `Extra: ${p.bio || "—"}`,
+      `Number: ${p.whatsappNumber || "—"}`,
+    ];
+    return lines.join("\n");
+  }
+
+  function buildCaptainPost(c: CaptainCard): string {
+    const lines = [
+      "*Looking For A Player*",
+      `Team: ${c.teamName || "—"}`,
+      `Number: ${c.whatsappNumber || "—"}`,
+      `League: ${c.preferredLeagues.join(", ") || "—"}`,
+      `Platform: ${c.platform || "—"}`,
+      `Role: ${c.role || "—"}`,
+      `Position: ${c.preferredPositions.join(", ") || "—"}`,
+      `Club Status: ${c.clubStatus || "—"}`,
+      `Requirements: ${c.requirements || "—"}`,
+      `Trial Group Link: ${c.trialGroupLink || "—"}`,
+      `Extra: —`,
+    ];
+    return lines.join("\n");
   }
 
   const displayName = (p: MarketPlayer) =>
@@ -112,7 +192,7 @@ export default function MarketPage() {
         Only listed players are shown. Contact info is hidden; captains can request a trial or contact via WhatsApp.
       </p>
 
-      {!isCaptain && (
+      {!isCaptain && !isAdmin && (
         <div className="card border-[var(--accent)]/30 bg-[var(--accent)]/5">
           <p className="text-sm text-[var(--text)]">
             <strong>Are you a captain?</strong>{" "}
@@ -164,6 +244,19 @@ export default function MarketPage() {
             ))}
           </select>
         </div>
+        <div>
+          <label className="block text-sm text-[var(--muted)]">Role</label>
+          <select
+            className="input mt-1 w-auto min-w-[120px]"
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+          >
+            <option value="">All roles</option>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>{r[0].toUpperCase() + r.slice(1)}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading ? (
@@ -201,6 +294,11 @@ export default function MarketPage() {
                   Leagues: {p.preferredLeagues.join(", ")}
                 </p>
               )}
+              {p.previousClub && (
+                <p className="mt-1 text-sm text-[var(--muted)]">
+                  Previous club: {p.previousClub}
+                </p>
+              )}
               {p.bio && (
                 <p className="mt-2 text-sm text-[var(--muted)]">{p.bio}</p>
               )}
@@ -232,10 +330,68 @@ export default function MarketPage() {
                     )}
                   </>
                 )}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(buildPlayerPost(p), p.id)}
+                    className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:bg-white/5"
+                  >
+                    {copiedId === p.id ? "Copied ✓" : "Copy post"}
+                  </button>
+                )}
               </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Admin-only captain section */}
+      {isAdmin && (
+        <div className="space-y-4 pt-4 border-t border-[var(--border)]">
+          <h2 className="text-xl font-bold text-[var(--text)]">Captains looking for players</h2>
+          {captains.length === 0 ? (
+            <div className="card text-center text-[var(--muted)]">No captains have set up their listing yet.</div>
+          ) : (
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {captains.map((c) => (
+                <li key={c.id} className="card flex flex-col">
+                  <span className="font-semibold text-[var(--text)]">{c.teamName || c.email}</span>
+                  {c.platform && (
+                    <p className="mt-1 text-sm text-[var(--muted)]">{c.platform}</p>
+                  )}
+                  {c.preferredLeagues.length > 0 && (
+                    <p className="mt-1 text-sm text-[var(--muted)]">
+                      Leagues: {c.preferredLeagues.join(", ")}
+                    </p>
+                  )}
+                  {c.preferredPositions.length > 0 && (
+                    <p className="mt-1 text-sm text-[var(--text)]">
+                      Positions: {c.preferredPositions.join(", ")}
+                    </p>
+                  )}
+                  {c.role && (
+                    <p className="mt-1 text-sm text-[var(--muted)]">Role: {c.role}</p>
+                  )}
+                  {c.clubStatus && (
+                    <p className="mt-1 text-sm text-[var(--muted)]">Club status: {c.clubStatus}</p>
+                  )}
+                  {c.requirements && (
+                    <p className="mt-2 text-sm text-[var(--muted)]">{c.requirements}</p>
+                  )}
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(buildCaptainPost(c), `captain-${c.id}`)}
+                      className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:bg-white/5"
+                    >
+                      {copiedId === `captain-${c.id}` ? "Copied ✓" : "Copy post"}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       {modalPlayer && (

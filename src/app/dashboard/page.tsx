@@ -26,6 +26,7 @@ type Player = {
   preferredPositions: string[];
   preferredLeagues: string[];
   bio: string | null;
+  previousClub: string | null;
 };
 
 type TrialRequest = {
@@ -48,6 +49,7 @@ export default function DashboardPage() {
   const [gamertag, setGamertag] = useState("");
   const [role, setRole] = useState("");
   const [platform, setPlatform] = useState("");
+  const [previousClub, setPreviousClub] = useState("");
   const [trialRequests, setTrialRequests] = useState<TrialRequest[]>([]);
   const [updatingRequestId, setUpdatingRequestId] = useState<string | null>(null);
 
@@ -67,6 +69,7 @@ export default function DashboardPage() {
         setGamertag(data.gamertag ?? "");
         setRole(ROLES.includes(data.role) ? data.role : "Starter");
         setPlatform(data.platform ?? "");
+        setPreviousClub(data.previousClub ?? "");
       })
       .catch(() => router.replace("/login"))
       .finally(() => setLoading(false));
@@ -95,6 +98,7 @@ export default function DashboardPage() {
           preferredPositions: positions,
           preferredLeagues: leagues,
           bio: bio || null,
+          previousClub: previousClub.trim() || null,
         }),
       });
       const data = await res.json();
@@ -248,6 +252,20 @@ export default function DashboardPage() {
           value={gamertag}
           onChange={(e) => setGamertag(e.target.value)}
           placeholder="Override (optional)"
+        />
+      </div>
+
+      <div className="card space-y-4">
+        <label className="block font-semibold text-[var(--text)]">Previous club</label>
+        <p className="text-sm text-[var(--muted)]">
+          Your most recent club. Leave blank if you are a free agent.
+        </p>
+        <input
+          type="text"
+          className="input max-w-xs"
+          value={previousClub}
+          onChange={(e) => setPreviousClub(e.target.value)}
+          placeholder="e.g. FC Cape Town (or leave blank)"
         />
       </div>
 
