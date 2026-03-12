@@ -265,7 +265,7 @@ export default function DashboardPage() {
           className="input max-w-xs"
           value={previousClub}
           onChange={(e) => setPreviousClub(e.target.value)}
-          placeholder="e.g. FC Cape Town (or leave blank)"
+          placeholder="e.g. FC Zamalek (or leave blank)"
         />
       </div>
 
