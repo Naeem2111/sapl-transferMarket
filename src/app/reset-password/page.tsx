@@ -98,7 +98,7 @@ export default function ResetPasswordPage() {
       {step === "phone" && (
         <>
           <p className="mt-1 text-[var(--muted)]">
-            Enter your phone number and we'll send you a verification code.
+            Enter your phone number and we'll send you a verification code via WhatsApp.
           </p>
           <form onSubmit={handleSendOtp} className="mt-6 space-y-4">
             <div className="flex gap-2">

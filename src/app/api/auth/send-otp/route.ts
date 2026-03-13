@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { toFullNumber, normalizedFormsForMatch } from "@/lib/phone";
 import { generateOtpCode, getOtpExpiry } from "@/lib/otp";
-import { sendSms } from "@/lib/sms";
+import { sendWhatsApp } from "@/lib/whatsapp";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
@@ -69,13 +69,13 @@ export async function POST(request: Request) {
       create: { phone: full, code, expiresAt },
       update: { code, expiresAt },
     });
-    const smsResult = await sendSms(
+    const waResult = await sendWhatsApp(
       full,
       `Your SAPL Transfer Market verification code is: ${code}. It expires in 10 minutes.`
     );
-    if (!smsResult.ok) {
+    if (!waResult.ok) {
       return NextResponse.json(
-        { error: "Failed to send SMS. Please try again later." },
+        { error: "Failed to send WhatsApp message. Please try again later." },
         { status: 502 }
       );
     }

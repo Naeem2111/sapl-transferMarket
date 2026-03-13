@@ -70,7 +70,7 @@ export default function RegisterPage() {
     <div className="mx-auto max-w-sm">
       <h1 className="text-2xl font-bold text-[var(--text)]">Create account</h1>
       <p className="mt-1 text-[var(--muted)]">
-        Use the same phone number that's in LeagueRepublic. We'll send a code to confirm it's you.
+        Use the same phone number that's in LeagueRepublic. We'll send a code via WhatsApp to confirm it's you.
       </p>
 
       {step === "phone" ? (
@@ -112,7 +112,7 @@ export default function RegisterPage() {
       ) : (
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <p className="text-sm text-[var(--muted)]">
-            We sent a 6-digit code to {dialingCode} {phoneNumber.trim()}. Enter it below.
+            We sent a 6-digit code to {dialingCode} {phoneNumber.trim()} via WhatsApp. Enter it below.
           </p>
           <button type="button" className="text-sm text-[var(--accent)] hover:underline" onClick={() => setStep("phone")}>
             Use a different number
