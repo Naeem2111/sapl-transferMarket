@@ -69,10 +69,7 @@ export async function POST(request: Request) {
       create: { phone: full, code, expiresAt },
       update: { code, expiresAt },
     });
-    const waResult = await sendWhatsApp(
-      full,
-      `Your SAPL Transfer Market verification code is: ${code}. It expires in 10 minutes.`
-    );
+    const waResult = await sendWhatsApp(full, code);
     if (!waResult.ok) {
       return NextResponse.json(
         { error: "Failed to send WhatsApp message. Please try again later." },
