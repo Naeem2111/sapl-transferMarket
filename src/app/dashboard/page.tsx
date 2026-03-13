@@ -7,6 +7,7 @@ import { POSITIONS } from "@/lib/positions";
 import { DEFAULT_LEAGUES } from "@/lib/leagues";
 import { ROLES } from "@/lib/roles";
 import { PLATFORMS } from "@/lib/platforms";
+import Toast from "@/components/Toast";
 
 type Player = {
   id: string;
@@ -53,6 +54,7 @@ export default function DashboardPage() {
   const [trialRequests, setTrialRequests] = useState<TrialRequest[]>([]);
   const [updatingRequestId, setUpdatingRequestId] = useState<string | null>(null);
   const [clubSuggestions, setClubSuggestions] = useState<string[]>([]);
+  const [showSaved, setShowSaved] = useState(false);
 
   useEffect(() => {
     fetch("/api/me")
@@ -107,7 +109,10 @@ export default function DashboardPage() {
         }),
       });
       const data = await res.json();
-      if (res.ok) setPlayer(data);
+      if (res.ok) {
+        setPlayer(data);
+        setShowSaved(true);
+      }
     } finally {
       setSaving(false);
     }
@@ -170,7 +175,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <dt className="text-[var(--muted)]">Gamertag / Username</dt>
-            <dd className="text-[var(--text)]">{player.userName || "—"}</dd>
+            <dd className="text-[var(--text)]">{player.internalRef1 || player.internalRef2 || player.userName || "—"}</dd>
           </div>
           <div>
             <dt className="text-[var(--muted)]">Person ID</dt>
@@ -309,6 +314,8 @@ export default function DashboardPage() {
           </ul>
         </div>
       )}
+
+      <Toast message="Changes saved" show={showSaved} onDone={() => setShowSaved(false)} />
     </div>
   );
 }

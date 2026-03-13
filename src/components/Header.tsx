@@ -49,6 +49,9 @@ export default function Header() {
               <Link href="/admin" className="text-[var(--muted)] hover:text-[var(--text)]">
                 Dashboard
               </Link>
+              <Link href="/admin/users" className="text-[var(--muted)] hover:text-[var(--text)]">
+                Users
+              </Link>
               <Link href="/admin/import" className="text-[var(--muted)] hover:text-[var(--text)]">
                 Import
               </Link>

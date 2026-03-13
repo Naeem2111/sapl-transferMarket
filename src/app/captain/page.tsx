@@ -7,6 +7,7 @@ import { POSITIONS } from "@/lib/positions";
 import { DEFAULT_LEAGUES } from "@/lib/leagues";
 import { PLATFORMS } from "@/lib/platforms";
 import { ROLES } from "@/lib/roles";
+import Toast from "@/components/Toast";
 
 type TrialRequestRow = {
   id: string;
@@ -49,6 +50,7 @@ export default function CaptainPage() {
   const [requests, setRequests] = useState<TrialRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
 
   // Form state
   const [teamName, setTeamName] = useState("");
@@ -128,7 +130,10 @@ export default function CaptainPage() {
         }),
       });
       const data = await res.json();
-      if (res.ok) setCaptain(data);
+      if (res.ok) {
+        setCaptain(data);
+        setShowSaved(true);
+      }
     } finally {
       setSaving(false);
     }
@@ -355,6 +360,8 @@ export default function CaptainPage() {
           </ul>
         )}
       </div>
+
+      <Toast message="Changes saved" show={showSaved} onDone={() => setShowSaved(false)} />
     </div>
   );
 }

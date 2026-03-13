@@ -233,6 +233,7 @@ export default function AdminPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-[var(--text)]">Admin dashboard</h1>
         <div className="flex gap-2">
+          <Link href="/admin/users" className="btn-ghost">Users</Link>
           <Link href="/market" className="btn-ghost">Market</Link>
           <button
             type="button"
