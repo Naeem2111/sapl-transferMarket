@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function CaptainLoginPage() {
   const router = useRouter();
@@ -22,11 +23,8 @@ export default function CaptainLoginPage() {
         body: JSON.stringify({ email: email.trim(), password }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Login failed");
-        return;
-      }
-      router.push("/market");
+      if (!res.ok) { setError(data.error || "Login failed"); return; }
+      router.push("/captain");
       router.refresh();
     } finally {
       setLoading(false);
@@ -42,37 +40,25 @@ export default function CaptainLoginPage() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label className="block text-sm font-medium text-[var(--muted)]">Email</label>
-          <input
-            type="email"
-            className="input mt-1"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            required
-          />
+          <input type="email" className="input mt-1" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
         </div>
         <div>
-          <label className="block text-sm font-medium text-[var(--muted)]">Password</label>
-          <input
-            type="password"
-            className="input mt-1"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-[var(--muted)]">Password</label>
+            <Link href="/captain/forgot-password" className="text-xs text-[var(--accent)] hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+          <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
-        {error && (
-          <p className="text-sm text-[var(--danger)]">{error}</p>
-        )}
+        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         <button type="submit" className="btn-primary w-full" disabled={loading}>
           {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-[var(--muted)]">
         New captain?{" "}
-        <Link href="/captain/register" className="text-[var(--accent)] hover:underline">
-          Create account
-        </Link>
+        <Link href="/captain/register" className="text-[var(--accent)] hover:underline">Create account</Link>
       </p>
     </div>
   );

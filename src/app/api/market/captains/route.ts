@@ -3,11 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { parseLeagues } from "@/lib/leagues";
 import { parsePositions } from "@/lib/positions";
 import { getCurrentPlayer, getCurrentAdmin } from "@/lib/auth";
-import { getWhatsAppLink, getWhatsAppNumber } from "@/lib/phone";
 
-// Public: returns all captains who have set up a listing (teamName + at least one field filled).
-// Logged-in players get whatsappLink to contact the captain.
-// Admins get whatsappNumber (raw) for copy-post.
 export async function GET() {
   try {
     const player = await getCurrentPlayer();
@@ -15,8 +11,8 @@ export async function GET() {
 
     const captains = await prisma.captain.findMany({
       where: {
-        // Only show captains who have at least set their team name
-        teamName: { not: null },
+        approvalStatus: "approved",
+        listed: true,
       },
       select: {
         id: true,
@@ -52,7 +48,6 @@ export async function GET() {
           clubStatus: c.clubStatus,
           trialGroupLink: player || admin ? c.trialGroupLink : null,
           requirements: c.requirements,
-          // Only logged-in players/admins get contact info
           whatsappLink,
           whatsappNumber: admin ? c.whatsappNumber : null,
         };

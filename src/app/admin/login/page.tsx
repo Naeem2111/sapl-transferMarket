@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -52,9 +53,7 @@ export default function AdminLoginPage() {
         </div>
         <div>
           <label className="block text-sm text-[var(--muted)]">Password</label>
-          <input
-            type="password"
-            className="input mt-1 w-full"
+          <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}

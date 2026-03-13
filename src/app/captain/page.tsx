@@ -24,11 +24,19 @@ type TrialRequestRow = {
   createdAt: string;
 };
 
+const CLUB_STATUSES = [
+  "Free agents only",
+  "Will pay transfer fee (R200)",
+  "Open to both",
+];
+
 export default function CaptainPage() {
   const router = useRouter();
   const [captain, setCaptain] = useState<{
     email: string;
     teamName: string | null;
+    listed: boolean;
+    approvalStatus: string;
     platform: string | null;
     preferredLeagues: string[];
     preferredPositions: string[];
@@ -43,6 +51,8 @@ export default function CaptainPage() {
   const [saving, setSaving] = useState(false);
 
   // Form state
+  const [teamName, setTeamName] = useState("");
+  const [listed, setListed] = useState(false);
   const [platform, setPlatform] = useState("");
   const [preferredLeagues, setPreferredLeagues] = useState<string[]>([]);
   const [preferredPositions, setPreferredPositions] = useState<string[]>([]);
@@ -61,6 +71,8 @@ export default function CaptainPage() {
           return;
         }
         setCaptain(data);
+        setTeamName(data.teamName ?? "");
+        setListed(data.listed ?? false);
         setPlatform(data.platform ?? "");
         setPreferredLeagues(Array.isArray(data.preferredLeagues) ? data.preferredLeagues : []);
         setPreferredPositions(Array.isArray(data.preferredPositions) ? data.preferredPositions : []);
@@ -103,6 +115,8 @@ export default function CaptainPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          teamName: teamName.trim() || null,
+          listed,
           platform: platform.trim() || null,
           preferredLeagues,
           preferredPositions,
@@ -125,12 +139,6 @@ export default function CaptainPage() {
   const displayName = (p: TrialRequestRow["player"]) =>
     [p.firstName, p.lastName].filter(Boolean).join(" ") || p.userName || "Player";
 
-  const CLUB_STATUSES = [
-    "Free agents only",
-    "Will pay transfer fee (R200)",
-    "Open to both",
-  ];
-
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div className="flex items-center justify-between">
@@ -141,7 +149,7 @@ export default function CaptainPage() {
             type="button"
             className="btn-ghost"
             onClick={async () => {
-              await fetch("/api/captain/logout", { method: "POST" });
+              await fetch("/api/auth/captain/logout", { method: "POST" });
               router.push("/");
               router.refresh();
             }}
@@ -151,20 +159,52 @@ export default function CaptainPage() {
         </div>
       </div>
 
+      {/* Account */}
       <div className="card">
         <h2 className="font-semibold text-[var(--text)]">Account</h2>
         <p className="mt-1 text-[var(--muted)]">{captain.email}</p>
-        {captain.teamName && (
-          <p className="mt-1 text-[var(--text)]">Team: {captain.teamName}</p>
-        )}
       </div>
 
-      {/* Listing details used to generate the WhatsApp post */}
+      {/* Listing info */}
       <div className="card space-y-4">
-        <h2 className="font-semibold text-[var(--text)]">Looking for a player — listing info</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-[var(--text)]">Looking for a player — listing info</h2>
+          {/* Listed toggle */}
+          <label className="flex cursor-pointer items-center gap-2">
+            <span className="text-sm text-[var(--muted)]">
+              {listed ? "Listed on market" : "Not listed"}
+            </span>
+            <div
+              role="switch"
+              aria-checked={listed}
+              onClick={() => setListed((v) => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                listed ? "bg-[var(--accent)]" : "bg-[var(--border)]"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  listed ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </div>
+          </label>
+        </div>
+
         <p className="text-sm text-[var(--muted)]">
-          Fill in these details so an admin can generate and post a <em>Looking For A Player</em> post on the WhatsApp group on your behalf.
+          Fill in your details. Toggle <strong>Listed on market</strong> to show or hide your listing on the transfer market.
         </p>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Team name</label>
+          <input
+            type="text"
+            className="input mt-1 max-w-xs"
+            value={teamName}
+            onChange={(e) => setTeamName(e.target.value)}
+            placeholder="e.g. Azzurri Esports"
+          />
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-[var(--text)]">WhatsApp number</label>
@@ -287,6 +327,7 @@ export default function CaptainPage() {
         </button>
       </div>
 
+      {/* Trial requests */}
       <div className="card">
         <h2 className="font-semibold text-[var(--text)]">Your trial requests</h2>
         {loading ? (

@@ -15,21 +15,32 @@ export default function HomePage() {
             Browse market
           </Link>
           <Link href="/login" className="btn border border-[var(--border)] text-[var(--text)] hover:bg-white/5">
-            Sign in to list yourself
+            Player sign in
+          </Link>
+          <Link href="/captain/login" className="btn border border-[var(--border)] text-[var(--accent)] hover:bg-white/5">
+            Captain sign in
           </Link>
         </div>
       </section>
+
       <section className="card max-w-2xl mx-auto">
-        <h2 className="text-lg font-semibold text-[var(--text)]">How it works</h2>
+        <h2 className="text-lg font-semibold text-[var(--text)]">For players</h2>
         <ul className="mt-3 list-inside list-disc space-y-1 text-[var(--muted)]">
           <li>Your club imports player data from LeagueRepublic (Person export).</li>
           <li>Create an account with your <strong className="text-[var(--text)]">phone number</strong> (dialing code + number, same as in LeagueRepublic) and a password.</li>
           <li>Set your preferred positions and leagues, then turn <strong className="text-[var(--text)]">Listed</strong> on to appear in the market.</li>
-          <li>Only players who have listed themselves appear in the market.</li>
+          <li>Can&apos;t register with your number? Use the <Link href="/register/manual" className="text-[var(--accent)] hover:underline">manual verification</Link> form and an admin will sort it out.</li>
         </ul>
-        <p className="mt-4 text-sm text-[var(--muted)]">
-          <a href="/admin/import" className="text-[var(--accent)] hover:underline">Admin: Import CSV</a>
-        </p>
+      </section>
+
+      <section className="card max-w-2xl mx-auto">
+        <h2 className="text-lg font-semibold text-[var(--text)]">For captains</h2>
+        <ul className="mt-3 list-inside list-disc space-y-1 text-[var(--muted)]">
+          <li><Link href="/captain/register" className="text-[var(--accent)] hover:underline">Register as a captain</Link> with your email and team name.</li>
+          <li>An admin will review and approve your account — you&apos;ll be able to sign in once approved.</li>
+          <li>Fill in your listing details (platform, leagues, positions, requirements) and toggle <strong className="text-[var(--text)]">Listed</strong> to appear on the market.</li>
+          <li>Browse listed players, send trial requests, and contact them via WhatsApp.</li>
+        </ul>
       </section>
     </div>
   );

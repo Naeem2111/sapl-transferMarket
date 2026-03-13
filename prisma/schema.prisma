@@ -71,6 +71,12 @@ model Captain {
   passwordHash String
   teamName     String?  // e.g. "Azzurri Esports"
 
+  // Approval status: pending | approved | rejected
+  approvalStatus String @default("pending")
+
+  // Whether the captain is listed on the market
+  listed Boolean @default(false)
+
   // Looking-for-player listing fields (used to generate WhatsApp posts)
   platform           String?
   preferredLeagues   String   @default("[]") // JSON array
@@ -82,6 +88,7 @@ model Captain {
   whatsappNumber     String?  // captain's contact number for the post
 
   trialRequests TrialRequest[]
+  resetToken    CaptainResetToken?
 }
 
 model Admin {
@@ -102,4 +109,34 @@ model TrialRequest {
   status    String   @default("pending") // pending | accepted | declined
 
   @@unique([captainId, playerId])
+}
+
+model CaptainResetToken {
+  id        String   @id @default(cuid())
+  captainId String   @unique
+  captain   Captain  @relation(fields: [captainId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+}
+
+model PendingPlayerRegistration {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Info submitted by the applicant
+  firstName   String
+  lastName    String
+  dialingCode String   @default("27")
+  phoneNumber String   // raw input as entered
+  email       String?
+  personId    String?  // LeagueRepublic Person ID if they know it
+  teamName    String?  // which SAPL team they play for
+  notes       String?  // free text explanation
+
+  // Admin resolution
+  status         String   @default("pending") // pending | approved | rejected
+  adminNotes     String?
+  linkedPlayerId String?  // Player.id if admin links to existing record
+  reviewedAt     DateTime?
 }

@@ -13,6 +13,8 @@ export async function GET() {
     id: captain.id,
     email: captain.email,
     teamName: captain.teamName,
+    listed: captain.listed,
+    approvalStatus: captain.approvalStatus,
     platform: captain.platform,
     preferredLeagues: parseLeagues(captain.preferredLeagues),
     preferredPositions: parsePositions(captain.preferredPositions),
@@ -32,6 +34,8 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
     const {
+      teamName,
+      listed,
       platform,
       preferredLeagues,
       preferredPositions,
@@ -41,6 +45,8 @@ export async function PATCH(request: Request) {
       requirements,
       whatsappNumber,
     } = body as {
+      teamName?: string | null;
+      listed?: boolean;
       platform?: string | null;
       preferredLeagues?: string[];
       preferredPositions?: string[];
@@ -52,6 +58,8 @@ export async function PATCH(request: Request) {
     };
 
     const data: Parameters<typeof prisma.captain.update>[0]["data"] = {};
+    if (teamName !== undefined) data.teamName = teamName?.trim() || null;
+    if (listed !== undefined) data.listed = listed;
     if (platform !== undefined) data.platform = platform?.trim() || null;
     if (Array.isArray(preferredLeagues)) data.preferredLeagues = JSON.stringify(preferredLeagues);
     if (Array.isArray(preferredPositions)) data.preferredPositions = JSON.stringify(preferredPositions);
@@ -70,6 +78,8 @@ export async function PATCH(request: Request) {
       id: updated.id,
       email: updated.email,
       teamName: updated.teamName,
+      listed: updated.listed,
+      approvalStatus: updated.approvalStatus,
       platform: updated.platform,
       preferredLeagues: parseLeagues(updated.preferredLeagues),
       preferredPositions: parsePositions(updated.preferredPositions),

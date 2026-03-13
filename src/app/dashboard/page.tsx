@@ -52,15 +52,13 @@ export default function DashboardPage() {
   const [previousClub, setPreviousClub] = useState("");
   const [trialRequests, setTrialRequests] = useState<TrialRequest[]>([]);
   const [updatingRequestId, setUpdatingRequestId] = useState<string | null>(null);
+  const [clubSuggestions, setClubSuggestions] = useState<string[]>([]);
 
   useEffect(() => {
     fetch("/api/me")
       .then((r) => r.json())
       .then((data) => {
-        if (data.error) {
-          router.replace("/login");
-          return;
-        }
+        if (data.error) { router.replace("/login"); return; }
         setPlayer(data);
         setListed(data.listed ?? false);
         setPositions(Array.isArray(data.preferredPositions) ? data.preferredPositions : []);
@@ -83,6 +81,13 @@ export default function DashboardPage() {
       .catch(() => setTrialRequests([]));
   }, [player?.id]);
 
+  useEffect(() => {
+    fetch("/api/clubs")
+      .then((r) => r.json())
+      .then((data) => (Array.isArray(data) ? setClubSuggestions(data) : setClubSuggestions([])))
+      .catch(() => setClubSuggestions([]));
+  }, []);
+
   async function handleSave() {
     if (!player) return;
     setSaving(true);
@@ -102,24 +107,18 @@ export default function DashboardPage() {
         }),
       });
       const data = await res.json();
-      if (res.ok) {
-        setPlayer(data);
-      }
+      if (res.ok) setPlayer(data);
     } finally {
       setSaving(false);
     }
   }
 
   function togglePosition(pos: string) {
-    setPositions((prev) =>
-      prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]
-    );
+    setPositions((prev) => prev.includes(pos) ? prev.filter((p) => p !== pos) : [...prev, pos]);
   }
 
   function toggleLeague(league: string) {
-    setLeagues((prev) =>
-      prev.includes(league) ? prev.filter((l) => l !== league) : [...prev, league]
-    );
+    setLeagues((prev) => prev.includes(league) ? prev.filter((l) => l !== league) : [...prev, league]);
   }
 
   async function respondToTrialRequest(requestId: string, status: "accepted" | "declined") {
@@ -131,21 +130,15 @@ export default function DashboardPage() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
-        setTrialRequests((prev) =>
-          prev.map((r) => (r.id === requestId ? { ...r, status } : r))
-        );
+        setTrialRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status } : r)));
       }
     } finally {
       setUpdatingRequestId(null);
     }
   }
 
-  if (loading) {
-    return <p className="text-[var(--muted)]">Loading…</p>;
-  }
-  if (!player) {
-    return null;
-  }
+  if (loading) return <p className="text-[var(--muted)]">Loading…</p>;
+  if (!player) return null;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -167,6 +160,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* LeagueRepublic info */}
       <div className="card space-y-4">
         <h2 className="font-semibold text-[var(--text)]">LeagueRepublic info</h2>
         <dl className="grid gap-2 text-sm">
@@ -175,7 +169,7 @@ export default function DashboardPage() {
             <dd className="text-[var(--text)]">{[player.firstName, player.lastName].filter(Boolean).join(" ") || "—"}</dd>
           </div>
           <div>
-            <dt className="text-[var(--muted)]">Gamer tag / User name</dt>
+            <dt className="text-[var(--muted)]">Gamertag / Username</dt>
             <dd className="text-[var(--text)]">{player.userName || "—"}</dd>
           </div>
           <div>
@@ -193,171 +187,119 @@ export default function DashboardPage() {
         </dl>
       </div>
 
+      {/* Listing */}
       <div className="card space-y-4">
-        <label className="flex cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            checked={listed}
-            onChange={(e) => setListed(e.target.checked)}
-            className="h-4 w-4 rounded border-[var(--border)] bg-[var(--bg)] text-[var(--accent)]"
-          />
-          <span className="font-semibold text-[var(--text)]">Listed on transfer market</span>
-        </label>
-        <p className="text-sm text-[var(--muted)]">
-          Only when this is on will you appear in the market for other teams to see.
-        </p>
-      </div>
-
-      <div className="card space-y-4">
-        <h2 className="font-semibold text-[var(--text)]">Role</h2>
-        <p className="text-sm text-[var(--muted)]">Your role in the team.</p>
-        <select
-          className="input max-w-xs"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-        >
-          {ROLES.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="card space-y-4">
-        <h2 className="font-semibold text-[var(--text)]">Platform</h2>
-        <p className="text-sm text-[var(--muted)]">Which platform you play on.</p>
-        <select
-          className="input max-w-xs"
-          value={platform}
-          onChange={(e) => setPlatform(e.target.value)}
-        >
-          <option value="">Select platform</option>
-          {PLATFORMS.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="card space-y-4">
-        <label className="block font-semibold text-[var(--text)]">Gamertag</label>
-        <p className="text-sm text-[var(--muted)]">
-          Shown on the market next to your name. From LeagueRepublic:{" "}
-          <strong className="text-[var(--text)]">
-            {player.internalRef1 || player.internalRef2 || "—"}
-          </strong>
-          . Override below if you want a different tag.
-        </p>
-        <input
-          type="text"
-          className="input max-w-xs"
-          value={gamertag}
-          onChange={(e) => setGamertag(e.target.value)}
-          placeholder="Override (optional)"
-        />
-      </div>
-
-      <div className="card space-y-4">
-        <label className="block font-semibold text-[var(--text)]">Previous club</label>
-        <p className="text-sm text-[var(--muted)]">
-          Your most recent club. Leave blank if you are a free agent.
-        </p>
-        <input
-          type="text"
-          className="input max-w-xs"
-          value={previousClub}
-          onChange={(e) => setPreviousClub(e.target.value)}
-          placeholder="e.g. FC Zamalek (or leave blank)"
-        />
-      </div>
-
-      <div className="card space-y-4">
-        <h2 className="font-semibold text-[var(--text)]">Preferred positions</h2>
-        <div className="flex flex-wrap gap-2">
-          {POSITIONS.map((pos) => (
-            <button
-              key={pos}
-              type="button"
-              onClick={() => togglePosition(pos)}
-              className={`rounded-lg border px-3 py-1.5 text-sm transition ${
-                positions.includes(pos)
-                  ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
-                  : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-[var(--text)]">Transfer market listing</h2>
+          <label className="flex cursor-pointer items-center gap-2">
+            <span className="text-sm text-[var(--muted)]">
+              {listed ? "Listed on market" : "Not listed"}
+            </span>
+            <div
+              role="switch"
+              aria-checked={listed}
+              onClick={() => setListed((v) => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                listed ? "bg-[var(--accent)]" : "bg-[var(--border)]"
               }`}
             >
-              {pos}
-            </button>
-          ))}
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${listed ? "translate-x-6" : "translate-x-1"}`} />
+            </div>
+          </label>
         </div>
-      </div>
+        <p className="text-sm text-[var(--muted)]">
+          Only when this is on will you appear in the market for teams to see.
+        </p>
 
-      <div className="card space-y-4">
-        <h2 className="font-semibold text-[var(--text)]">Preferred leagues</h2>
-        <div className="flex flex-wrap gap-2">
-          {DEFAULT_LEAGUES.map((league) => (
-            <button
-              key={league}
-              type="button"
-              onClick={() => toggleLeague(league)}
-              className={`rounded-lg border px-3 py-1.5 text-sm transition ${
-                leagues.includes(league)
-                  ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]"
-                  : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"
-              }`}
-            >
-              {league}
-            </button>
-          ))}
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Gamertag</label>
+          <p className="mb-1 text-xs text-[var(--muted)]">
+            From LeagueRepublic: <strong className="text-[var(--text)]">{player.internalRef1 || player.internalRef2 || "—"}</strong>. Override below if different.
+          </p>
+          <input type="text" className="input max-w-xs" value={gamertag} onChange={(e) => setGamertag(e.target.value)} placeholder="Override (optional)" />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Previous club</label>
+          <p className="mb-1 text-xs text-[var(--muted)]">Leave blank if you are a free agent.</p>
+          <input type="text" className="input max-w-xs" list="club-suggestions" value={previousClub} onChange={(e) => setPreviousClub(e.target.value)} placeholder="e.g. FC Zamalek (or leave blank)" />
+          <datalist id="club-suggestions">
+            {clubSuggestions.map((club) => (
+              <option key={club} value={club} />
+            ))}
+          </datalist>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Platform</label>
+          <select className="input mt-1 max-w-xs" value={platform} onChange={(e) => setPlatform(e.target.value)}>
+            <option value="">Select platform</option>
+            {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Role</label>
+          <select className="input mt-1 max-w-xs" value={role} onChange={(e) => setRole(e.target.value)}>
+            {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Preferred positions</label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {POSITIONS.map((pos) => (
+              <button key={pos} type="button" onClick={() => togglePosition(pos)}
+                className={`rounded-lg border px-3 py-1.5 text-sm transition ${positions.includes(pos) ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]" : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"}`}>
+                {pos}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Preferred leagues</label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {DEFAULT_LEAGUES.map((league) => (
+              <button key={league} type="button" onClick={() => toggleLeague(league)}
+                className={`rounded-lg border px-3 py-1.5 text-sm transition ${leagues.includes(league) ? "border-[var(--accent)] bg-[var(--accent)]/20 text-[var(--accent)]" : "border-[var(--border)] text-[var(--muted)] hover:bg-white/5"}`}>
+                {league}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-[var(--text)]">Short bio (optional)</label>
+          <textarea className="input mt-1 min-h-[100px] resize-y" value={bio} onChange={(e) => setBio(e.target.value)} placeholder="e.g. CAM/CM, looking for a competitive team in Premiership..." />
+        </div>
+
+        <button onClick={handleSave} className="btn-primary w-full" disabled={saving}>
+          {saving ? "Saving…" : "Save changes"}
+        </button>
       </div>
 
-      <div className="card space-y-4">
-        <label className="block font-semibold text-[var(--text)]">Short bio (optional)</label>
-        <textarea
-          className="input min-h-[100px] resize-y"
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          placeholder="e.g. CAM/CM, looking for a competitive team in Premiership..."
-        />
-      </div>
-
+      {/* Trial requests */}
       {trialRequests.length > 0 && (
         <div className="card space-y-4">
           <h2 className="font-semibold text-[var(--text)]">Trial requests</h2>
-          <p className="text-sm text-[var(--muted)]">
-            Captains have requested you to trial. Accept or decline.
-          </p>
+          <p className="text-sm text-[var(--muted)]">Captains have requested you to trial. Accept or decline.</p>
           <ul className="space-y-3">
             {trialRequests.map((r) => (
-              <li
-                key={r.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] p-3"
-              >
+              <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] p-3">
                 <div>
-                  <span className="font-medium text-[var(--text)]">
-                    {r.captain.teamName || r.captain.email}
-                  </span>
-                  <span className="ml-2 rounded px-2 py-0.5 text-xs text-[var(--muted)]">
-                    {r.status}
-                  </span>
+                  <span className="font-medium text-[var(--text)]">{r.captain.teamName || r.captain.email}</span>
+                  <span className="ml-2 rounded px-2 py-0.5 text-xs text-[var(--muted)]">{r.status}</span>
                 </div>
-                {r.message && (
-                  <p className="w-full text-sm text-[var(--muted)]">{r.message}</p>
-                )}
+                {r.message && <p className="w-full text-sm text-[var(--muted)]">{r.message}</p>}
                 {r.status === "pending" && (
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="rounded border border-[var(--accent)] bg-[var(--accent)]/10 px-3 py-1.5 text-sm text-[var(--accent)] hover:bg-[var(--accent)]/20 disabled:opacity-50"
-                      disabled={updatingRequestId === r.id}
-                      onClick={() => respondToTrialRequest(r.id, "accepted")}
-                    >
+                    <button type="button" disabled={updatingRequestId === r.id} onClick={() => respondToTrialRequest(r.id, "accepted")}
+                      className="rounded border border-[var(--accent)] bg-[var(--accent)]/10 px-3 py-1.5 text-sm text-[var(--accent)] hover:bg-[var(--accent)]/20 disabled:opacity-50">
                       Accept
                     </button>
-                    <button
-                      type="button"
-                      className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:bg-white/5 disabled:opacity-50"
-                      disabled={updatingRequestId === r.id}
-                      onClick={() => respondToTrialRequest(r.id, "declined")}
-                    >
+                    <button type="button" disabled={updatingRequestId === r.id} onClick={() => respondToTrialRequest(r.id, "declined")}
+                      className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:bg-white/5 disabled:opacity-50">
                       Decline
                     </button>
                   </div>
@@ -367,10 +309,6 @@ export default function DashboardPage() {
           </ul>
         </div>
       )}
-
-      <button onClick={handleSave} className="btn-primary w-full" disabled={saving}>
-        {saving ? "Saving…" : "Save changes"}
-      </button>
     </div>
   );
 }

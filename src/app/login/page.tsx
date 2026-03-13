@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DIALING_CODES } from "@/lib/phone";
+import PasswordInput from "@/components/PasswordInput";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -56,9 +57,7 @@ export default function LoginPage() {
               title="Dialing code"
             >
               {DIALING_CODES.map((d) => (
-                <option key={d.code} value={d.code}>
-                  {d.label}
-                </option>
+                <option key={d.code} value={d.code}>{d.label}</option>
               ))}
             </select>
           </div>
@@ -75,18 +74,19 @@ export default function LoginPage() {
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-[var(--muted)]">Password</label>
-          <input
-            type="password"
-            className="input mt-1"
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-[var(--muted)]">Password</label>
+            <Link href="/reset-password" className="text-xs text-[var(--accent)] hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+          <PasswordInput
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
         </div>
-        {error && (
-          <p className="text-sm text-[var(--danger)]">{error}</p>
-        )}
+        {error && <p className="text-sm text-[var(--danger)]">{error}</p>}
         <button type="submit" className="btn-primary w-full" disabled={loading}>
           {loading ? "Signing in…" : "Sign in"}
         </button>

@@ -1,37 +1,48 @@
 import { NextResponse } from "next/server";
-import { getCurrentAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { parseLeagues } from "@/lib/leagues";
-import { parsePositions } from "@/lib/positions";
+import { getCurrentAdmin } from "@/lib/auth";
 
+// GET /api/admin/captains — list all captains (admin only)
 export async function GET() {
   const admin = await getCurrentAdmin();
   if (!admin) {
-    return NextResponse.json({ error: "Not signed in as admin" }, { status: 401 });
+    return NextResponse.json({ error: "Not authorised" }, { status: 401 });
   }
-
   const captains = await prisma.captain.findMany({
     select: {
       id: true,
       email: true,
       teamName: true,
-      platform: true,
-      preferredLeagues: true,
-      preferredPositions: true,
-      role: true,
-      clubStatus: true,
-      trialGroupLink: true,
-      requirements: true,
-      whatsappNumber: true,
+      approvalStatus: true,
+      listed: true,
+      createdAt: true,
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
   });
+  return NextResponse.json(captains);
+}
 
-  return NextResponse.json(
-    captains.map((c) => ({
-      ...c,
-      preferredLeagues: parseLeagues(c.preferredLeagues),
-      preferredPositions: parsePositions(c.preferredPositions),
-    }))
-  );
+// PATCH /api/admin/captains — approve or reject a captain
+export async function PATCH(request: Request) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Not authorised" }, { status: 401 });
+  }
+  try {
+    const { captainId, action } = (await request.json()) as {
+      captainId: string;
+      action: "approve" | "reject";
+    };
+    if (!captainId || !["approve", "reject"].includes(action)) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+    const updated = await prisma.captain.update({
+      where: { id: captainId },
+      data: { approvalStatus: action === "approve" ? "approved" : "rejected" },
+    });
+    return NextResponse.json({ ok: true, approvalStatus: updated.approvalStatus });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
 }

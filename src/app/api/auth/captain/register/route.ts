@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { setCaptainSession } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
@@ -28,22 +27,16 @@ export async function POST(request: Request) {
       );
     }
     const passwordHash = await bcrypt.hash(password, 10);
-    const captain = await prisma.captain.create({
+    await prisma.captain.create({
       data: {
         email: emailTrim.toLowerCase(),
         passwordHash,
         teamName: teamName?.trim() || null,
+        approvalStatus: "pending",
       },
     });
-    await setCaptainSession(captain.id);
-    return NextResponse.json({
-      ok: true,
-      captain: {
-        id: captain.id,
-        email: captain.email,
-        teamName: captain.teamName,
-      },
-    });
+    // Do NOT set a session — captain must be approved first
+    return NextResponse.json({ ok: true, pending: true });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

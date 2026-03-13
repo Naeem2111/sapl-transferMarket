@@ -3,9 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { toFullNumber, normalizedFormsForMatch } from "@/lib/phone";
 import { generateOtpCode, getOtpExpiry } from "@/lib/otp";
 import { sendSms } from "@/lib/sms";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+
+    // Rate limit per IP: 15 requests per hour
+    const ipCheck = checkRateLimit(`otp:ip:${ip}`, 15, 60 * 60 * 1000);
+    if (!ipCheck.allowed) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const { dialingCode, phoneNumber } = body as {
       dialingCode: string;
@@ -16,6 +28,15 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Phone number (with dialing code) required" },
         { status: 400 }
+      );
+    }
+
+    // Rate limit per phone: 5 requests per hour
+    const phoneCheck = checkRateLimit(`otp:phone:${full}`, 5, 60 * 60 * 1000);
+    if (!phoneCheck.allowed) {
+      return NextResponse.json(
+        { error: "Too many code requests for this number. Please try again later." },
+        { status: 429 }
       );
     }
     const allPlayers = await prisma.player.findMany({
