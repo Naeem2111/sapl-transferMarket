@@ -81,7 +81,6 @@ export const DIALING_CODES = [
   { code: "258", country: "Mozambique", label: "+258" },
   { code: "264", country: "Namibia", label: "+264" },
   { code: "268", country: "Eswatini", label: "+268" },
-  { code: "255", country: "Tanzania", label: "+255" },
   { code: "260", country: "Zambia", label: "+260" },
   { code: "263", country: "Zimbabwe", label: "+263" },
   { code: "244", country: "Angola", label: "+244" },
@@ -98,7 +97,6 @@ export const DIALING_CODES = [
   { code: "251", country: "Ethiopia", label: "+251" },
   { code: "233", country: "Ghana", label: "+233" },
   { code: "225", country: "Ivory Coast", label: "+225" },
-  { code: "254", country: "Kenya", label: "+254" },
   { code: "218", country: "Libya", label: "+218" },
   { code: "212", country: "Morocco", label: "+212" },
   { code: "234", country: "Nigeria", label: "+234" },
@@ -107,7 +105,6 @@ export const DIALING_CODES = [
   { code: "249", country: "Sudan", label: "+249" },
   { code: "211", country: "South Sudan", label: "+211" },
   { code: "216", country: "Tunisia", label: "+216" },
-  { code: "256", country: "Uganda", label: "+256" },
   // Europe
   { code: "355", country: "Albania", label: "+355" },
   { code: "43", country: "Austria", label: "+43" },

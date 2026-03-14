@@ -174,30 +174,10 @@ export default function CaptainPage() {
       <div className="card space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-[var(--text)]">Looking for a player — listing info</h2>
-          {/* Listed toggle */}
-          <label className="flex cursor-pointer items-center gap-2">
-            <span className="text-sm text-[var(--muted)]">
-              {listed ? "Listed on market" : "Not listed"}
-            </span>
-            <div
-              role="switch"
-              aria-checked={listed}
-              onClick={() => setListed((v) => !v)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                listed ? "bg-[var(--accent)]" : "bg-[var(--border)]"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  listed ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </div>
-          </label>
         </div>
 
         <p className="text-sm text-[var(--muted)]">
-          Fill in your details. Toggle <strong>Listed on market</strong> to show or hide your listing on the transfer market.
+          Fill in your details. Toggle <strong>Listed on market</strong> below to show or hide your listing on the transfer market.
         </p>
 
         <div>
@@ -325,6 +305,29 @@ export default function CaptainPage() {
             onChange={(e) => setRequirements(e.target.value)}
             placeholder="e.g. Must be available Tue/Thu evenings, competitive mindset..."
           />
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-[var(--border)] p-3">
+          <div>
+            <p className="text-sm font-medium text-[var(--text)]">
+              {listed ? "Listed on market" : "Not listed on market"}
+            </p>
+            <p className="text-xs text-[var(--muted)]">Toggle to show or hide your listing on the transfer market</p>
+          </div>
+          <div
+            role="switch"
+            aria-checked={listed}
+            onClick={() => setListed((v) => !v)}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
+              listed ? "bg-[var(--accent)]" : "bg-[var(--border)]"
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                listed ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </div>
         </div>
 
         <button onClick={handleSave} className="btn-primary w-full" disabled={saving}>
