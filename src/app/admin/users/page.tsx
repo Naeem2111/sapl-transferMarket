@@ -110,8 +110,6 @@ export default function AdminUsersPage() {
         platform: p.platform || "",
         previousClub: p.previousClub || "",
         status: p.status || "",
-        internalRef1: p.internalRef1 || "",
-        internalRef2: p.internalRef2 || "",
       },
     });
     setEditError("");
@@ -314,10 +312,30 @@ export default function AdminUsersPage() {
               Edit {editing.type === "player" ? "player" : "captain"}
             </h3>
 
-            {Object.entries(editing.fields).map(([key, value]) => (
+            {Object.entries(editing.fields).map(([key, value]) => {
+              const labels: Record<string, string> = {
+                firstName: "First name",
+                lastName: "Last name",
+                gamertag: "Gamertag",
+                email: "Email",
+                mobilePhone: "Phone number",
+                teams: "Team",
+                role: "Role",
+                platform: "Platform",
+                previousClub: "Previous club",
+                status: "Status",
+                teamName: "Team name",
+                clubStatus: "Club status",
+                whatsappNumber: "WhatsApp number",
+                trialGroupLink: "Trial group link",
+                requirements: "Requirements",
+                approvalStatus: "Approval status",
+              };
+              const label = labels[key] || key;
+              return (
               <div key={key}>
                 <label className="block text-sm font-medium text-[var(--muted)]">
-                  {key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}
+                  {label}
                 </label>
                 {key === "approvalStatus" ? (
                   <select
@@ -345,7 +363,8 @@ export default function AdminUsersPage() {
                   />
                 )}
               </div>
-            ))}
+              );
+            })}
 
             {editError && <p className="text-sm text-[var(--danger)]">{editError}</p>}
 

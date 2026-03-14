@@ -343,7 +343,7 @@ export default function MarketPage() {
                     Previous club: {p.previousClub || "Free Agent"}
                   </p>
                   {p.bio && <p className="mt-2 text-sm text-[var(--muted)]">{p.bio}</p>}
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-auto pt-4 flex flex-wrap gap-2">
                     {isCaptain && (
                       <>
                         {p.alreadyRequestedTrial ? (
@@ -469,7 +469,7 @@ export default function MarketPage() {
                   {c.role && <p className="mt-1 text-sm text-[var(--muted)]">Role: {c.role}</p>}
                   {c.clubStatus && <p className="mt-1 text-sm text-[var(--muted)]">Club status: {c.clubStatus}</p>}
                   {c.requirements && <p className="mt-2 text-sm text-[var(--muted)]">{c.requirements}</p>}
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="mt-auto pt-4 flex flex-wrap gap-2">
                     {isPlayer && (
                       <>
                         {c.trialGroupLink && (
