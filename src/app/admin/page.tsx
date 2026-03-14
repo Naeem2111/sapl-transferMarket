@@ -38,10 +38,17 @@ type PendingConfirm = {
   onConfirm: () => void;
 } | null;
 
+type AdminRow = {
+  id: string;
+  email: string;
+  createdAt: string;
+};
+
 export default function AdminPage() {
   const router = useRouter();
   const [captains, setCaptains] = useState<CaptainRow[]>([]);
   const [playerRegs, setPlayerRegs] = useState<PlayerRegRow[]>([]);
+  const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
 
@@ -70,10 +77,14 @@ export default function AdminPage() {
       fetch("/api/admin/pending-players", { credentials: "include" })
         .then((r) => r.ok ? r.json() : [])
         .catch(() => []),
+      fetch("/api/admin/admins", { credentials: "include" })
+        .then((r) => r.ok ? r.json() : [])
+        .catch(() => []),
     ])
-      .then(([captainData, playerRegData]) => {
+      .then(([captainData, playerRegData, adminData]) => {
         if (Array.isArray(captainData)) setCaptains(captainData);
         if (Array.isArray(playerRegData)) setPlayerRegs(playerRegData);
+        if (Array.isArray(adminData)) setAdmins(adminData);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -437,6 +448,29 @@ export default function AdminPage() {
           <section>
             <h2 className="mb-3 text-lg font-semibold text-[var(--text)]">Rejected captains</h2>
             <CaptainTable rows={rejectedCaptains} />
+          </section>
+          {/* ── Admin accounts ── */}
+          <section>
+            <h2 className="mb-3 text-lg font-semibold text-[var(--text)]">Admin accounts</h2>
+            {admins.length === 0 ? (
+              <p className="text-sm text-[var(--muted)]">None.</p>
+            ) : (
+              <ul className="space-y-2">
+                {admins.map((a) => (
+                  <li key={a.id} className="card flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text)]">{a.email}</p>
+                      <p className="text-xs text-[var(--muted)]">
+                        Added {new Date(a.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              To add or remove admins, use the terminal script.
+            </p>
           </section>
         </>
       )}

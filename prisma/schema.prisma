@@ -70,6 +70,7 @@ model Captain {
   email        String   @unique
   passwordHash String
   teamName     String?  // e.g. "Azzurri Esports"
+  authPhone    String?  // phone used for OTP verification (digits only, e.g. 27718665667)
 
   // Approval status: pending | approved | rejected
   approvalStatus String @default("pending")

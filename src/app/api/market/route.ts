@@ -5,6 +5,8 @@ import { parseLeagues } from "@/lib/leagues";
 import { getCurrentCaptain, getCurrentAdmin } from "@/lib/auth";
 import { getWhatsAppLink, getWhatsAppNumber } from "@/lib/phone";
 
+const PAGE_SIZE = 12; // 12 cards = 4 rows of 3 on desktop
+
 // Only returns players who have listed themselves (listed === true).
 // Public: only name + what they filled in (positions, leagues, bio). No contact info.
 // Captain: also gets whatsappLink and alreadyRequestedTrial per player.
@@ -15,6 +17,7 @@ export async function GET(request: Request) {
   const position = searchParams.get("position");
   const platform = searchParams.get("platform");
   const role = searchParams.get("role");
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
 
   try {
     const where: {
@@ -41,9 +44,14 @@ export async function GET(request: Request) {
     const captain = await getCurrentCaptain();
     const admin = await getCurrentAdmin();
 
+    // Get total count for pagination
+    const total = await prisma.player.count({ where });
+
     const players = await prisma.player.findMany({
       where,
       orderBy: [{ updatedAt: "desc" }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include:
         captain
           ? {
@@ -112,7 +120,13 @@ export async function GET(request: Request) {
       return base;
     });
 
-    return NextResponse.json(list);
+    return NextResponse.json({
+      players: list,
+      total,
+      page,
+      pageSize: PAGE_SIZE,
+      totalPages: Math.ceil(total / PAGE_SIZE),
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });

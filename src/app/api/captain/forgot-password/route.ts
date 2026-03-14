@@ -1,65 +1,66 @@
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/email";
-import crypto from "crypto";
+import { toFullNumber } from "@/lib/phone";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
+// POST /api/captain/forgot-password — verify OTP + set new password (phone-based)
 export async function POST(request: Request) {
   try {
     const ip = getClientIp(request);
 
-    // Rate limit per IP: 10 requests per hour
     const ipCheck = checkRateLimit(`capt-reset:ip:${ip}`, 10, 60 * 60 * 1000);
     if (!ipCheck.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests. Please try again later." },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
     }
 
-    const { email } = (await request.json()) as { email: string };
-    const emailTrim = email?.trim().toLowerCase();
-    if (!emailTrim) {
-      return NextResponse.json({ error: "Email required" }, { status: 400 });
+    const body = await request.json();
+    const { dialingCode, phoneNumber, code, newPassword } = body as {
+      dialingCode: string;
+      phoneNumber: string;
+      code: string;
+      newPassword: string;
+    };
+
+    const full = toFullNumber(dialingCode || "", phoneNumber || "");
+    if (!full) {
+      return NextResponse.json({ error: "Phone number required" }, { status: 400 });
+    }
+    if (!code || !newPassword || newPassword.length < 6) {
+      return NextResponse.json({ error: "Verification code and new password (min 6 characters) required" }, { status: 400 });
     }
 
-    // Rate limit per email: 3 requests per hour
-    const emailCheck = checkRateLimit(`capt-reset:email:${emailTrim}`, 3, 60 * 60 * 1000);
-    if (!emailCheck.allowed) {
-      // Generic response — don't reveal whether email exists
-      return NextResponse.json({ ok: true });
+    const phoneCheck = checkRateLimit(`capt-reset:phone:${full}`, 3, 60 * 60 * 1000);
+    if (!phoneCheck.allowed) {
+      return NextResponse.json({ error: "Too many reset attempts. Please try again later." }, { status: 429 });
     }
 
-    const captain = await prisma.captain.findUnique({ where: { email: emailTrim } });
-
-    // Only allow approved captains
-    if (!captain || captain.approvalStatus !== "approved") {
-      return NextResponse.json({ ok: true });
+    // Verify OTP
+    const otp = await prisma.pendingOtp.findUnique({ where: { phone: full } });
+    if (!otp) {
+      return NextResponse.json({ error: "No code found. Please request a new code." }, { status: 400 });
+    }
+    if (new Date() > otp.expiresAt) {
+      await prisma.pendingOtp.delete({ where: { phone: full } });
+      return NextResponse.json({ error: "Code has expired. Please request a new one." }, { status: 400 });
+    }
+    if (otp.code !== code.trim()) {
+      return NextResponse.json({ error: "Incorrect code." }, { status: 400 });
     }
 
-    // Generate a secure token valid for 1 hour
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    // Find captain by phone
+    const captain = await prisma.captain.findFirst({ where: { authPhone: full } });
+    if (!captain) {
+      return NextResponse.json({ error: "No captain account found with this phone number." }, { status: 404 });
+    }
 
-    await prisma.captainResetToken.upsert({
-      where: { captainId: captain.id },
-      create: { captainId: captain.id, token, expiresAt },
-      update: { token, expiresAt },
+    // Update password and clean up
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.captain.update({
+      where: { id: captain.id },
+      data: { passwordHash },
     });
-
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://sapl-transfer-market.vercel.app"}/captain/reset-password?token=${token}`;
-
-    await sendEmail({
-      to: emailTrim,
-      subject: "Reset your SAPL Transfer Market password",
-      html: `
-        <p>Hi ${captain.teamName || "Captain"},</p>
-        <p>You requested a password reset for your SAPL Transfer Market account.</p>
-        <p><a href="${resetUrl}" style="background:#6366f1;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin:12px 0;">Reset password</a></p>
-        <p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p>
-        <p style="color:#888;font-size:12px;">Or copy this link: ${resetUrl}</p>
-      `,
-    });
+    await prisma.pendingOtp.delete({ where: { phone: full } });
 
     return NextResponse.json({ ok: true });
   } catch (e) {
