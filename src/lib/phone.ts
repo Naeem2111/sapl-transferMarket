@@ -75,10 +75,9 @@ export function getWhatsAppLink(
 export const DIALING_CODES = [
   // South Africa first
   { code: "27", country: "South Africa", label: "+27" },
-  // Southern Africa / SADC
-  { code: "267", country: "Botswana", label: "+267" },
-  { code: "266", country: "Lesotho", label: "+266" },
-  { code: "265", country: "Malawi", label: "+265" },
+  { code: "254", country: "Kenya", label: "+254" },
+  { code: "255", country: "Tanzania", label: "+255" },
+  { code: "256", country: "Uganda", label: "+256" },
   { code: "258", country: "Mozambique", label: "+258" },
   { code: "264", country: "Namibia", label: "+264" },
   { code: "268", country: "Eswatini", label: "+268" },
