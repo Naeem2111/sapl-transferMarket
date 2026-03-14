@@ -73,7 +73,9 @@ model Captain {
   authPhone    String?  // phone used for OTP verification (digits only, e.g. 27718665667)
 
   // Approval status: pending | approved | rejected
-  approvalStatus String @default("pending")
+  // Default "approved" so existing captains aren't locked out when column is added.
+  // New captains are explicitly set to "pending" in the register API.
+  approvalStatus String @default("approved")
 
   // Whether the captain is listed on the market
   listed Boolean @default(false)
