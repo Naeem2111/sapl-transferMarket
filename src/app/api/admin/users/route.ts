@@ -159,6 +159,15 @@ export async function PATCH(request: Request) {
         const raw = typeof data.authPhone === "string" ? data.authPhone.replace(/\D/g, "") : "";
         allowed.authPhone = raw || null;
       }
+      // Handle personId separately — check uniqueness
+      if ("personId" in data && typeof data.personId === "string" && data.personId.trim()) {
+        const newPersonId = data.personId.trim();
+        const existing = await prisma.player.findUnique({ where: { personId: newPersonId } });
+        if (existing && existing.id !== id) {
+          return NextResponse.json({ error: `Person ID "${newPersonId}" is already assigned to another player.` }, { status: 400 });
+        }
+        allowed.personId = newPersonId;
+      }
       if ("listed" in data) allowed.listed = !!data.listed;
       if ("preferredPositions" in data && Array.isArray(data.preferredPositions)) {
         allowed.preferredPositions = JSON.stringify(data.preferredPositions);

@@ -27,6 +27,8 @@ type PlayerRegRow = {
   status: string;
   adminNotes: string | null;
   linkedPlayerId: string | null;
+  linkedPersonId: string | null;
+  linkedPlayerName: string | null;
   createdAt: string;
   reviewedAt: string | null;
 };
@@ -89,18 +91,15 @@ export default function AdminPage() {
   }, []);
 
   const q = search.trim().toLowerCase();
-
   function matchesCaptain(c: CaptainRow): boolean {
     if (!q) return true;
     return [c.email, c.teamName].filter(Boolean).join(" ").toLowerCase().includes(q);
   }
-
   function matchesPlayerReg(r: PlayerRegRow): boolean {
     if (!q) return true;
     return [r.firstName, r.lastName, r.email, r.phoneNumber, r.teamName, r.personId, r.notes]
       .filter(Boolean).join(" ").toLowerCase().includes(q);
   }
-
   function matchesAdmin(a: AdminRow): boolean {
     if (!q) return true;
     return a.email.toLowerCase().includes(q);
@@ -110,107 +109,62 @@ export default function AdminPage() {
     setActionId(captainId);
     try {
       const res = await fetch("/api/admin/captains", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({ captainId, action }),
       });
       if (res.ok) {
-        const statusMap: Record<string, string> = {
-          approve: "approved",
-          reject: "rejected",
-          revoke: "revoked",
-          reapprove: "pending",
-        };
-        setCaptains((prev) =>
-          prev.map((c) =>
-            c.id === captainId ? { ...c, approvalStatus: statusMap[action] } : c
-          )
-        );
+        const statusMap: Record<string, string> = { approve: "approved", reject: "rejected", revoke: "revoked", reapprove: "pending" };
+        setCaptains((prev) => prev.map((c) => c.id === captainId ? { ...c, approvalStatus: statusMap[action] } : c));
       }
-    } finally {
-      setActionId(null);
-    }
+    } finally { setActionId(null); }
   }
 
   async function handleDeleteCaptain(captainId: string) {
     setActionId(captainId);
     try {
       const res = await fetch("/api/admin/captains", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({ captainId }),
       });
-      if (res.ok) {
-        setCaptains((prev) => prev.filter((c) => c.id !== captainId));
-      }
-    } finally {
-      setActionId(null);
-    }
+      if (res.ok) setCaptains((prev) => prev.filter((c) => c.id !== captainId));
+    } finally { setActionId(null); }
   }
 
-  async function handlePlayerRegAction(
-    registrationId: string,
-    action: "approve" | "reject",
-    adminNotes?: string,
-    linkedPersonId?: string
-  ) {
+  async function handlePlayerRegAction(registrationId: string, action: "approve" | "reject", adminNotes?: string, linkedPersonId?: string) {
     setActionId(registrationId);
     setLinkError("");
     try {
       const res = await fetch("/api/admin/pending-players", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({ registrationId, action, adminNotes, linkedPersonId }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setLinkError(data.error || "Action failed");
-        return;
-      }
-      setPlayerRegs((prev) =>
-        prev.map((r) =>
-          r.id === registrationId ? { ...r, status: action === "approve" ? "approved" : "rejected" } : r
-        )
-      );
-      setLinkingId(null);
-      setLinkPersonId("");
-      setLinkNotes("");
-    } finally {
-      setActionId(null);
-    }
+      if (!res.ok) { setLinkError(data.error || "Action failed"); return; }
+      setPlayerRegs((prev) => prev.map((r) =>
+        r.id === registrationId ? { ...r, status: action === "approve" ? "approved" : "rejected" } : r
+      ));
+      setLinkingId(null); setLinkPersonId(""); setLinkNotes("");
+    } finally { setActionId(null); }
   }
 
   async function handleDeletePlayerReg(registrationId: string) {
     setActionId(registrationId);
     try {
       const res = await fetch("/api/admin/pending-players", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({ registrationId }),
       });
-      if (res.ok) {
-        setPlayerRegs((prev) => prev.filter((r) => r.id !== registrationId));
-      }
-    } finally {
-      setActionId(null);
-    }
+      if (res.ok) setPlayerRegs((prev) => prev.filter((r) => r.id !== registrationId));
+    } finally { setActionId(null); }
   }
 
   async function handleClearResolvedRegs() {
     try {
       const res = await fetch("/api/admin/pending-players", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include",
         body: JSON.stringify({ clearAll: true }),
       });
-      if (res.ok) {
-        setPlayerRegs((prev) => prev.filter((r) => r.status === "pending"));
-      }
+      if (res.ok) setPlayerRegs((prev) => prev.filter((r) => r.status === "pending"));
     } catch {}
   }
 
@@ -218,24 +172,13 @@ export default function AdminPage() {
   const approvedCaptains = captains.filter((c) => c.approvalStatus === "approved" && matchesCaptain(c));
   const rejectedCaptains = captains.filter((c) => c.approvalStatus === "rejected" && matchesCaptain(c));
   const revokedCaptains = captains.filter((c) => c.approvalStatus === "revoked" && matchesCaptain(c));
-
   const pendingPlayerRegs = playerRegs.filter((r) => r.status === "pending" && matchesPlayerReg(r));
   const resolvedPlayerRegs = playerRegs.filter((r) => r.status !== "pending" && matchesPlayerReg(r));
-
   const filteredAdmins = admins.filter(matchesAdmin);
 
   function StatusBadge({ status }: { status: string }) {
-    const colours: Record<string, string> = {
-      pending: "bg-yellow-500/15 text-yellow-400",
-      approved: "bg-green-500/15 text-green-400",
-      rejected: "bg-red-500/15 text-red-400",
-      revoked: "bg-orange-500/15 text-orange-400",
-    };
-    return (
-      <span className={`rounded px-2 py-0.5 text-xs font-medium ${colours[status] ?? ""}`}>
-        {status}
-      </span>
-    );
+    const colours: Record<string, string> = { pending: "bg-yellow-500/15 text-yellow-400", approved: "bg-green-500/15 text-green-400", rejected: "bg-red-500/15 text-red-400", revoked: "bg-orange-500/15 text-orange-400" };
+    return <span className={`rounded px-2 py-0.5 text-xs font-medium ${colours[status] ?? ""}`}>{status}</span>;
   }
 
   function CaptainTable({ rows, showDelete }: { rows: CaptainRow[]; showDelete?: boolean }) {
@@ -247,65 +190,32 @@ export default function AdminPage() {
             <div>
               <p className="font-medium text-[var(--text)]">{c.teamName || "(no team name)"}</p>
               <p className="text-sm text-[var(--muted)]">{c.email}</p>
-              <p className="text-xs text-[var(--muted)]">
-                Registered {new Date(c.createdAt).toLocaleDateString()}
-              </p>
+              <p className="text-xs text-[var(--muted)]">Registered {new Date(c.createdAt).toLocaleDateString()}</p>
             </div>
             <div className="flex items-center gap-2">
               <StatusBadge status={c.approvalStatus} />
-
               {c.approvalStatus === "pending" && (
                 <>
+                  <button type="button" disabled={actionId === c.id} onClick={() => handleCaptainAction(c.id, "approve")}
+                    className="rounded bg-green-600/20 px-3 py-1.5 text-sm text-green-400 hover:bg-green-600/30">Approve</button>
                   <button type="button" disabled={actionId === c.id}
-                    onClick={() => handleCaptainAction(c.id, "approve")}
-                    className="rounded bg-green-600/20 px-3 py-1.5 text-sm text-green-400 hover:bg-green-600/30">
-                    Approve
-                  </button>
-                  <button type="button" disabled={actionId === c.id}
-                    onClick={() => setPendingConfirm({
-                      title: "Reject captain",
-                      message: `Reject ${c.teamName || c.email}? They won't be able to register again with this email.`,
-                      confirmLabel: "Reject",
-                      onConfirm: () => { handleCaptainAction(c.id, "reject"); setPendingConfirm(null); },
-                    })}
-                    className="rounded bg-red-600/20 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600/30">
-                    Reject
-                  </button>
+                    onClick={() => setPendingConfirm({ title: "Reject captain", message: `Reject ${c.teamName || c.email}?`, confirmLabel: "Reject", onConfirm: () => { handleCaptainAction(c.id, "reject"); setPendingConfirm(null); } })}
+                    className="rounded bg-red-600/20 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600/30">Reject</button>
                 </>
               )}
-
               {c.approvalStatus === "approved" && (
                 <button type="button" disabled={actionId === c.id}
-                  onClick={() => setPendingConfirm({
-                    title: "Revoke captain access",
-                    message: `Revoke ${c.teamName || c.email}'s access? They'll be blocked from signing in until re-approved.`,
-                    confirmLabel: "Revoke",
-                    onConfirm: () => { handleCaptainAction(c.id, "revoke"); setPendingConfirm(null); },
-                  })}
-                  className="rounded bg-orange-600/20 px-3 py-1.5 text-sm text-orange-400 hover:bg-orange-600/30">
-                  Revoke
-                </button>
+                  onClick={() => setPendingConfirm({ title: "Revoke captain access", message: `Revoke ${c.teamName || c.email}'s access?`, confirmLabel: "Revoke", onConfirm: () => { handleCaptainAction(c.id, "revoke"); setPendingConfirm(null); } })}
+                  className="rounded bg-orange-600/20 px-3 py-1.5 text-sm text-orange-400 hover:bg-orange-600/30">Revoke</button>
               )}
-
               {(c.approvalStatus === "rejected" || c.approvalStatus === "revoked") && (
-                <button type="button" disabled={actionId === c.id}
-                  onClick={() => handleCaptainAction(c.id, "reapprove")}
-                  className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:bg-white/5">
-                  Re-approve
-                </button>
+                <button type="button" disabled={actionId === c.id} onClick={() => handleCaptainAction(c.id, "reapprove")}
+                  className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:bg-white/5">Re-approve</button>
               )}
-
               {showDelete && (
                 <button type="button" disabled={actionId === c.id}
-                  onClick={() => setPendingConfirm({
-                    title: "Delete captain",
-                    message: `Permanently delete ${c.teamName || c.email}? This cannot be undone.`,
-                    confirmLabel: "Delete",
-                    onConfirm: () => { handleDeleteCaptain(c.id); setPendingConfirm(null); },
-                  })}
-                  className="rounded bg-red-600/20 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600/30">
-                  Delete
-                </button>
+                  onClick={() => setPendingConfirm({ title: "Delete captain", message: `Permanently delete ${c.teamName || c.email}? This cannot be undone.`, confirmLabel: "Delete", onConfirm: () => { handleDeleteCaptain(c.id); setPendingConfirm(null); } })}
+                  className="rounded bg-red-600/20 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600/30">Delete</button>
               )}
             </div>
           </li>
@@ -321,9 +231,7 @@ export default function AdminPage() {
         <div className="flex gap-2">
           <Link href="/admin/users" className="btn-ghost">Users</Link>
           <Link href="/market" className="btn-ghost">Market</Link>
-          <button type="button" className="btn-ghost" onClick={async () => { await fetch("/api/auth/admin/logout", { method: "POST" }); router.push("/"); router.refresh(); }}>
-            Sign out
-          </button>
+          <button type="button" className="btn-ghost" onClick={async () => { await fetch("/api/auth/admin/logout", { method: "POST" }); router.push("/"); router.refresh(); }}>Sign out</button>
         </div>
       </div>
 
@@ -390,7 +298,6 @@ export default function AdminPage() {
                   </ul>
                 )}
 
-                {/* Resolved registrations with full details */}
                 {resolvedPlayerRegs.length > 0 && (
                   <details className="mt-4">
                     <summary className="cursor-pointer text-sm text-[var(--muted)] hover:text-[var(--text)]">
@@ -406,10 +313,15 @@ export default function AdminPage() {
                                 <p className="text-sm text-[var(--muted)]">+{r.dialingCode} {r.phoneNumber}</p>
                                 {r.email && <p className="text-sm text-[var(--muted)]">{r.email}</p>}
                                 {r.teamName && <p className="text-sm text-[var(--muted)]">Team: {r.teamName}</p>}
-                                {r.personId && <p className="text-sm font-mono text-[var(--muted)]">Person ID: {r.personId}</p>}
+                                {r.personId && <p className="text-sm font-mono text-[var(--muted)]">Submitted Person ID: {r.personId}</p>}
+                                {r.linkedPersonId && (
+                                  <p className="text-sm text-[var(--accent)]">
+                                    Linked to: {r.linkedPersonId}
+                                    {r.linkedPlayerName && ` (${r.linkedPlayerName})`}
+                                  </p>
+                                )}
                                 {r.notes && <p className="text-sm italic text-[var(--muted)]">&ldquo;{r.notes}&rdquo;</p>}
                                 {r.adminNotes && <p className="text-sm text-[var(--muted)]">Admin note: {r.adminNotes}</p>}
-                                {r.linkedPlayerId && <p className="text-sm text-[var(--accent)]">Linked to: {r.linkedPlayerId}</p>}
                                 <p className="text-xs text-[var(--muted)]">
                                   Submitted {new Date(r.createdAt).toLocaleDateString()}
                                   {r.reviewedAt && ` · Reviewed ${new Date(r.reviewedAt).toLocaleDateString()}`}
@@ -418,27 +330,15 @@ export default function AdminPage() {
                               <div className="flex items-center gap-2">
                                 <StatusBadge status={r.status} />
                                 <button type="button" disabled={actionId === r.id}
-                                  onClick={() => setPendingConfirm({
-                                    title: "Delete record",
-                                    message: `Delete ${r.firstName} ${r.lastName}'s registration record?`,
-                                    confirmLabel: "Delete",
-                                    onConfirm: () => { handleDeletePlayerReg(r.id); setPendingConfirm(null); },
-                                  })}
-                                  className="rounded bg-red-600/20 px-2 py-1 text-xs text-red-400 hover:bg-red-600/30">
-                                  Delete
-                                </button>
+                                  onClick={() => setPendingConfirm({ title: "Delete record", message: `Delete ${r.firstName} ${r.lastName}'s registration record?`, confirmLabel: "Delete", onConfirm: () => { handleDeletePlayerReg(r.id); setPendingConfirm(null); } })}
+                                  className="rounded bg-red-600/20 px-2 py-1 text-xs text-red-400 hover:bg-red-600/30">Delete</button>
                               </div>
                             </div>
                           </li>
                         ))}
                       </ul>
                       <button type="button"
-                        onClick={() => setPendingConfirm({
-                          title: "Clear all resolved",
-                          message: `Delete all ${resolvedPlayerRegs.length} resolved registration records? This cannot be undone.`,
-                          confirmLabel: "Clear all",
-                          onConfirm: () => { handleClearResolvedRegs(); setPendingConfirm(null); },
-                        })}
+                        onClick={() => setPendingConfirm({ title: "Clear all resolved", message: `Delete all ${resolvedPlayerRegs.length} resolved records? This cannot be undone.`, confirmLabel: "Clear all", onConfirm: () => { handleClearResolvedRegs(); setPendingConfirm(null); } })}
                         className="rounded border border-red-600/30 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600/10">
                         Clear all resolved ({resolvedPlayerRegs.length})
                       </button>
@@ -449,74 +349,47 @@ export default function AdminPage() {
             </details>
           </section>
 
-          {/* ── Captains: pending (open) ── */}
-          <section>
-            <details open>
-              <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">
-                Captain pending approval{" "}
-                {pendingCaptains.length > 0 && (
-                  <span className="ml-1 rounded bg-yellow-500/20 px-2 py-0.5 text-sm text-yellow-400">{pendingCaptains.length}</span>
-                )}
-              </summary>
-              <div className="mt-3"><CaptainTable rows={pendingCaptains} /></div>
-            </details>
-          </section>
+          <section><details open>
+            <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">
+              Captain pending approval{" "}
+              {pendingCaptains.length > 0 && <span className="ml-1 rounded bg-yellow-500/20 px-2 py-0.5 text-sm text-yellow-400">{pendingCaptains.length}</span>}
+            </summary>
+            <div className="mt-3"><CaptainTable rows={pendingCaptains} /></div>
+          </details></section>
 
-          {/* ── Captains: approved (collapsed) ── */}
-          <section>
-            <details>
-              <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">
-                Approved captains ({approvedCaptains.length})
-              </summary>
-              <div className="mt-3"><CaptainTable rows={approvedCaptains} /></div>
-            </details>
-          </section>
+          <section><details>
+            <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">Approved captains ({approvedCaptains.length})</summary>
+            <div className="mt-3"><CaptainTable rows={approvedCaptains} /></div>
+          </details></section>
 
-          {/* ── Captains: revoked (collapsed) ── */}
-          <section>
-            <details>
-              <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">
-                Revoked captains ({revokedCaptains.length})
-              </summary>
-              <div className="mt-3"><CaptainTable rows={revokedCaptains} showDelete /></div>
-            </details>
-          </section>
+          <section><details>
+            <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">Revoked captains ({revokedCaptains.length})</summary>
+            <div className="mt-3"><CaptainTable rows={revokedCaptains} showDelete /></div>
+          </details></section>
 
-          {/* ── Captains: rejected (collapsed, with delete) ── */}
-          <section>
-            <details>
-              <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">
-                Rejected captains ({rejectedCaptains.length})
-              </summary>
-              <div className="mt-3"><CaptainTable rows={rejectedCaptains} showDelete /></div>
-            </details>
-          </section>
+          <section><details>
+            <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">Rejected captains ({rejectedCaptains.length})</summary>
+            <div className="mt-3"><CaptainTable rows={rejectedCaptains} showDelete /></div>
+          </details></section>
 
-          {/* ── Admin accounts (collapsed) ── */}
-          <section>
-            <details>
-              <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">
-                Admin accounts ({filteredAdmins.length})
-              </summary>
-              <div className="mt-3">
-                {filteredAdmins.length === 0 ? (
-                  <p className="text-sm text-[var(--muted)]">None.</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {filteredAdmins.map((a) => (
-                      <li key={a.id} className="card flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-[var(--text)]">{a.email}</p>
-                          <p className="text-xs text-[var(--muted)]">Added {new Date(a.createdAt).toLocaleDateString()}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <p className="mt-2 text-xs text-[var(--muted)]">To add or remove admins, use the terminal script.</p>
-              </div>
-            </details>
-          </section>
+          <section><details>
+            <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">Admin accounts ({filteredAdmins.length})</summary>
+            <div className="mt-3">
+              {filteredAdmins.length === 0 ? <p className="text-sm text-[var(--muted)]">None.</p> : (
+                <ul className="space-y-2">
+                  {filteredAdmins.map((a) => (
+                    <li key={a.id} className="card flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-[var(--text)]">{a.email}</p>
+                        <p className="text-xs text-[var(--muted)]">Added {new Date(a.createdAt).toLocaleDateString()}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-2 text-xs text-[var(--muted)]">To add or remove admins, use the terminal script.</p>
+            </div>
+          </details></section>
         </>
       )}
 

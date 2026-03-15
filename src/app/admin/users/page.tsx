@@ -102,6 +102,7 @@ export default function AdminUsersPage() {
       type: "player",
       id: p.id,
       fields: {
+        personId: p.personId || "",
         firstName: p.firstName || "",
         lastName: p.lastName || "",
         gamertag: p.gamertag || "",
@@ -338,6 +339,7 @@ export default function AdminUsersPage() {
 
             {Object.entries(editing.fields).map(([key, value]) => {
               const labels: Record<string, string> = {
+                personId: "Person ID (LeagueRepublic)",
                 firstName: "First name",
                 lastName: "Last name",
                 gamertag: "Gamertag",

@@ -14,7 +14,26 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(registrations);
+  // Look up personId for any linked players
+  const linkedIds = registrations.map((r) => r.linkedPlayerId).filter(Boolean) as string[];
+  const linkedPlayers = linkedIds.length > 0
+    ? await prisma.player.findMany({
+        where: { id: { in: linkedIds } },
+        select: { id: true, personId: true, firstName: true, lastName: true },
+      })
+    : [];
+  const playerMap = new Map(linkedPlayers.map((p) => [p.id, p]));
+
+  const result = registrations.map((r) => {
+    const linked = r.linkedPlayerId ? playerMap.get(r.linkedPlayerId) : null;
+    return {
+      ...r,
+      linkedPersonId: linked?.personId || null,
+      linkedPlayerName: linked ? [linked.firstName, linked.lastName].filter(Boolean).join(" ") : null,
+    };
+  });
+
+  return NextResponse.json(result);
 }
 
 // PATCH /api/admin/pending-players — approve, reject, or link a pending registration
