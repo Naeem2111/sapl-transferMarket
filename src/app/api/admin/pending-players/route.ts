@@ -103,3 +103,37 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+
+// DELETE /api/admin/pending-players — delete resolved registrations
+export async function DELETE(request: Request) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Not authorised" }, { status: 401 });
+  }
+  try {
+    const { registrationId, clearAll } = (await request.json()) as {
+      registrationId?: string;
+      clearAll?: boolean;
+    };
+
+    if (clearAll) {
+      // Delete all resolved (non-pending) registrations
+      await prisma.pendingPlayerRegistration.deleteMany({
+        where: { status: { not: "pending" } },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    if (registrationId) {
+      await prisma.pendingPlayerRegistration.delete({
+        where: { id: registrationId },
+      });
+      return NextResponse.json({ ok: true });
+    }
+
+    return NextResponse.json({ error: "registrationId or clearAll required" }, { status: 400 });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}

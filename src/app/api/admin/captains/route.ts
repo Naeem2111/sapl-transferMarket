@@ -54,3 +54,22 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+
+// DELETE /api/admin/captains — permanently delete a captain
+export async function DELETE(request: Request) {
+  const admin = await getCurrentAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Not authorised" }, { status: 401 });
+  }
+  try {
+    const { captainId } = (await request.json()) as { captainId: string };
+    if (!captainId) {
+      return NextResponse.json({ error: "captainId required" }, { status: 400 });
+    }
+    await prisma.captain.delete({ where: { id: captainId } });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
+}

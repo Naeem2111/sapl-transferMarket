@@ -9,13 +9,18 @@ export function normalizePhoneDigits(phone: string): string {
 /**
  * Build full international number from dialing code + number (digits only).
  * E.g. dialingCode "27", number "718665667" -> "27718665667"
+ * Also handles: "27", "0718665667" -> "27718665667" (strips leading 0)
  */
 export function toFullNumber(dialingCode: string, number: string): string {
   const code = normalizePhoneDigits(dialingCode);
-  const num = normalizePhoneDigits(number);
+  let num = normalizePhoneDigits(number);
   if (!num) return "";
   // If number already starts with country code, use as-is
   if (code && num.startsWith(code)) return num;
+  // Strip leading 0 when a dialing code is provided (local format → international)
+  if (code && num.startsWith("0")) {
+    num = num.slice(1);
+  }
   return code + num;
 }
 

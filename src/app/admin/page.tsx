@@ -106,7 +106,6 @@ export default function AdminPage() {
     return a.email.toLowerCase().includes(q);
   }
 
-  // Captain actions: approve, reject, revoke, reapprove
   async function handleCaptainAction(captainId: string, action: "approve" | "reject" | "revoke" | "reapprove") {
     setActionId(captainId);
     try {
@@ -128,6 +127,23 @@ export default function AdminPage() {
             c.id === captainId ? { ...c, approvalStatus: statusMap[action] } : c
           )
         );
+      }
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function handleDeleteCaptain(captainId: string) {
+    setActionId(captainId);
+    try {
+      const res = await fetch("/api/admin/captains", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ captainId }),
+      });
+      if (res.ok) {
+        setCaptains((prev) => prev.filter((c) => c.id !== captainId));
       }
     } finally {
       setActionId(null);
@@ -167,6 +183,37 @@ export default function AdminPage() {
     }
   }
 
+  async function handleDeletePlayerReg(registrationId: string) {
+    setActionId(registrationId);
+    try {
+      const res = await fetch("/api/admin/pending-players", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ registrationId }),
+      });
+      if (res.ok) {
+        setPlayerRegs((prev) => prev.filter((r) => r.id !== registrationId));
+      }
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  async function handleClearResolvedRegs() {
+    try {
+      const res = await fetch("/api/admin/pending-players", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ clearAll: true }),
+      });
+      if (res.ok) {
+        setPlayerRegs((prev) => prev.filter((r) => r.status === "pending"));
+      }
+    } catch {}
+  }
+
   const pendingCaptains = captains.filter((c) => c.approvalStatus === "pending" && matchesCaptain(c));
   const approvedCaptains = captains.filter((c) => c.approvalStatus === "approved" && matchesCaptain(c));
   const rejectedCaptains = captains.filter((c) => c.approvalStatus === "rejected" && matchesCaptain(c));
@@ -191,7 +238,7 @@ export default function AdminPage() {
     );
   }
 
-  function CaptainTable({ rows }: { rows: CaptainRow[] }) {
+  function CaptainTable({ rows, showDelete }: { rows: CaptainRow[]; showDelete?: boolean }) {
     if (rows.length === 0) return <p className="text-sm text-[var(--muted)]">None.</p>;
     return (
       <ul className="space-y-3">
@@ -207,7 +254,6 @@ export default function AdminPage() {
             <div className="flex items-center gap-2">
               <StatusBadge status={c.approvalStatus} />
 
-              {/* Pending: approve or reject */}
               {c.approvalStatus === "pending" && (
                 <>
                   <button type="button" disabled={actionId === c.id}
@@ -228,7 +274,6 @@ export default function AdminPage() {
                 </>
               )}
 
-              {/* Approved: revoke only */}
               {c.approvalStatus === "approved" && (
                 <button type="button" disabled={actionId === c.id}
                   onClick={() => setPendingConfirm({
@@ -242,8 +287,7 @@ export default function AdminPage() {
                 </button>
               )}
 
-              {/* Rejected: re-approve (goes back to pending) */}
-              {c.approvalStatus === "rejected" && (
+              {(c.approvalStatus === "rejected" || c.approvalStatus === "revoked") && (
                 <button type="button" disabled={actionId === c.id}
                   onClick={() => handleCaptainAction(c.id, "reapprove")}
                   className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:bg-white/5">
@@ -251,12 +295,16 @@ export default function AdminPage() {
                 </button>
               )}
 
-              {/* Revoked: re-approve (goes back to pending) */}
-              {c.approvalStatus === "revoked" && (
+              {showDelete && (
                 <button type="button" disabled={actionId === c.id}
-                  onClick={() => handleCaptainAction(c.id, "reapprove")}
-                  className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--muted)] hover:bg-white/5">
-                  Re-approve
+                  onClick={() => setPendingConfirm({
+                    title: "Delete captain",
+                    message: `Permanently delete ${c.teamName || c.email}? This cannot be undone.`,
+                    confirmLabel: "Delete",
+                    onConfirm: () => { handleDeleteCaptain(c.id); setPendingConfirm(null); },
+                  })}
+                  className="rounded bg-red-600/20 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600/30">
+                  Delete
                 </button>
               )}
             </div>
@@ -341,20 +389,60 @@ export default function AdminPage() {
                     ))}
                   </ul>
                 )}
+
+                {/* Resolved registrations with full details */}
                 {resolvedPlayerRegs.length > 0 && (
                   <details className="mt-4">
-                    <summary className="cursor-pointer text-sm text-[var(--muted)] hover:text-[var(--text)]">Show resolved ({resolvedPlayerRegs.length})</summary>
-                    <ul className="mt-2 space-y-2">
-                      {resolvedPlayerRegs.map((r) => (
-                        <li key={r.id} className="card flex flex-wrap items-center justify-between gap-3 opacity-60">
-                          <div>
-                            <p className="text-sm text-[var(--text)]">{r.firstName} {r.lastName} — +{r.dialingCode} {r.phoneNumber}</p>
-                            {r.adminNotes && <p className="text-xs text-[var(--muted)]">Note: {r.adminNotes}</p>}
-                          </div>
-                          <StatusBadge status={r.status} />
-                        </li>
-                      ))}
-                    </ul>
+                    <summary className="cursor-pointer text-sm text-[var(--muted)] hover:text-[var(--text)]">
+                      Show resolved ({resolvedPlayerRegs.length})
+                    </summary>
+                    <div className="mt-2 space-y-2">
+                      <ul className="space-y-2">
+                        {resolvedPlayerRegs.map((r) => (
+                          <li key={r.id} className="card space-y-2 opacity-70">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <p className="font-medium text-[var(--text)]">{r.firstName} {r.lastName}</p>
+                                <p className="text-sm text-[var(--muted)]">+{r.dialingCode} {r.phoneNumber}</p>
+                                {r.email && <p className="text-sm text-[var(--muted)]">{r.email}</p>}
+                                {r.teamName && <p className="text-sm text-[var(--muted)]">Team: {r.teamName}</p>}
+                                {r.personId && <p className="text-sm font-mono text-[var(--muted)]">Person ID: {r.personId}</p>}
+                                {r.notes && <p className="text-sm italic text-[var(--muted)]">&ldquo;{r.notes}&rdquo;</p>}
+                                {r.adminNotes && <p className="text-sm text-[var(--muted)]">Admin note: {r.adminNotes}</p>}
+                                {r.linkedPlayerId && <p className="text-sm text-[var(--accent)]">Linked to: {r.linkedPlayerId}</p>}
+                                <p className="text-xs text-[var(--muted)]">
+                                  Submitted {new Date(r.createdAt).toLocaleDateString()}
+                                  {r.reviewedAt && ` · Reviewed ${new Date(r.reviewedAt).toLocaleDateString()}`}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <StatusBadge status={r.status} />
+                                <button type="button" disabled={actionId === r.id}
+                                  onClick={() => setPendingConfirm({
+                                    title: "Delete record",
+                                    message: `Delete ${r.firstName} ${r.lastName}'s registration record?`,
+                                    confirmLabel: "Delete",
+                                    onConfirm: () => { handleDeletePlayerReg(r.id); setPendingConfirm(null); },
+                                  })}
+                                  className="rounded bg-red-600/20 px-2 py-1 text-xs text-red-400 hover:bg-red-600/30">
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      <button type="button"
+                        onClick={() => setPendingConfirm({
+                          title: "Clear all resolved",
+                          message: `Delete all ${resolvedPlayerRegs.length} resolved registration records? This cannot be undone.`,
+                          confirmLabel: "Clear all",
+                          onConfirm: () => { handleClearResolvedRegs(); setPendingConfirm(null); },
+                        })}
+                        className="rounded border border-red-600/30 px-3 py-1.5 text-sm text-red-400 hover:bg-red-600/10">
+                        Clear all resolved ({resolvedPlayerRegs.length})
+                      </button>
+                    </div>
                   </details>
                 )}
               </div>
@@ -390,17 +478,17 @@ export default function AdminPage() {
               <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">
                 Revoked captains ({revokedCaptains.length})
               </summary>
-              <div className="mt-3"><CaptainTable rows={revokedCaptains} /></div>
+              <div className="mt-3"><CaptainTable rows={revokedCaptains} showDelete /></div>
             </details>
           </section>
 
-          {/* ── Captains: rejected (collapsed) ── */}
+          {/* ── Captains: rejected (collapsed, with delete) ── */}
           <section>
             <details>
               <summary className="cursor-pointer text-lg font-semibold text-[var(--text)] hover:text-[var(--accent)]">
                 Rejected captains ({rejectedCaptains.length})
               </summary>
-              <div className="mt-3"><CaptainTable rows={rejectedCaptains} /></div>
+              <div className="mt-3"><CaptainTable rows={rejectedCaptains} showDelete /></div>
             </details>
           </section>
 
