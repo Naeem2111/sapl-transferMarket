@@ -104,7 +104,7 @@ export default function AdminUsersPage() {
         lastName: p.lastName || "",
         gamertag: p.gamertag || "",
         email: p.email || "",
-        mobilePhone: p.mobilePhone || "",
+        authPhone: p.authPhone ? `+${p.authPhone}` : (p.mobilePhone || ""),
         teams: p.teams || "",
         role: p.role || "",
         platform: p.platform || "",
@@ -324,6 +324,7 @@ export default function AdminUsersPage() {
                 lastName: "Last name",
                 gamertag: "Gamertag",
                 email: "Email",
+                authPhone: "Phone number",
                 mobilePhone: "Phone number",
                 teams: "Team",
                 role: "Role",
@@ -338,23 +339,58 @@ export default function AdminUsersPage() {
                 approvalStatus: "Approval status",
               };
               const label = labels[key] || key;
+
+              // Dropdown options for specific fields
+              const dropdowns: Record<string, { value: string; label: string }[]> = {
+                role: [
+                  { value: "", label: "Select role" },
+                  { value: "Starter", label: "Starter" },
+                  { value: "Rotation", label: "Rotation" },
+                ],
+                platform: [
+                  { value: "", label: "Select platform" },
+                  { value: "PC", label: "PC" },
+                  { value: "PS5", label: "PS5" },
+                  { value: "Xbox", label: "Xbox" },
+                ],
+                status: [
+                  { value: "", label: "Select status" },
+                  { value: "Active", label: "Active" },
+                  { value: "Inactive", label: "Inactive" },
+                ],
+                clubStatus: [
+                  { value: "", label: "Select club status" },
+                  { value: "Free agents only", label: "Free agents only" },
+                  { value: "Will pay transfer fee (R200)", label: "Will pay transfer fee (R200)" },
+                  { value: "Open to both", label: "Open to both" },
+                ],
+                approvalStatus: [
+                  { value: "pending", label: "pending" },
+                  { value: "approved", label: "approved" },
+                  { value: "rejected", label: "rejected" },
+                  { value: "revoked", label: "revoked" },
+                ],
+              };
+
+              const isDropdown = key in dropdowns;
+              const isTextarea = key === "requirements" || key === "bio";
+
               return (
               <div key={key}>
                 <label className="block text-sm font-medium text-[var(--muted)]">
                   {label}
                 </label>
-                {key === "approvalStatus" ? (
+                {isDropdown ? (
                   <select
                     className="input mt-1"
                     value={value}
                     onChange={(e) => updateField(key, e.target.value)}
                   >
-                    <option value="pending">pending</option>
-                    <option value="approved">approved</option>
-                    <option value="rejected">rejected</option>
-                    <option value="revoked">revoked</option>
+                    {dropdowns[key].map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
                   </select>
-                ) : key === "requirements" || key === "bio" ? (
+                ) : isTextarea ? (
                   <textarea
                     className="input mt-1"
                     rows={3}

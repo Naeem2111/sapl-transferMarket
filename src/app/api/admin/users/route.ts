@@ -154,6 +154,11 @@ export async function PATCH(request: Request) {
           allowed[key] = typeof val === "string" && val.trim() ? val.trim() : null;
         }
       }
+      // Handle authPhone separately — strip + and non-digits
+      if ("authPhone" in data) {
+        const raw = typeof data.authPhone === "string" ? data.authPhone.replace(/\D/g, "") : "";
+        allowed.authPhone = raw || null;
+      }
       if ("listed" in data) allowed.listed = !!data.listed;
       if ("preferredPositions" in data && Array.isArray(data.preferredPositions)) {
         allowed.preferredPositions = JSON.stringify(data.preferredPositions);
