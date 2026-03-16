@@ -48,6 +48,7 @@ model Player {
 
   // Transfer market fields
   listed             Boolean  @default(false) // only show in market when true
+  listedAt           DateTime? // when the listing was last bumped (24h cooldown)
   gamertag           String?  // display on market (e.g. PSN/EA tag) instead of userName when set
   platform           String?  // PC | PS5 | Xbox
   preferredPositions String   @default("[]") // JSON array e.g. ["ST","CAM","CM"]
@@ -79,6 +80,7 @@ model Captain {
 
   // Whether the captain is listed on the market
   listed Boolean @default(false)
+  listedAt DateTime? // when the listing was last bumped (24h cooldown)
 
   // Looking-for-player listing fields (used to generate WhatsApp posts)
   platform           String?

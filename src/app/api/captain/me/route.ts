@@ -70,6 +70,18 @@ export async function PATCH(request: Request) {
     if (requirements !== undefined) data.requirements = requirements?.trim() || null;
     if (whatsappNumber !== undefined) data.whatsappNumber = whatsappNumber?.trim() || null;
 
+    // Bump listedAt if listing is on AND last bump was >24h ago (or never)
+    if (data.listed === true || (data.listed === undefined && captain.listed)) {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      if (!captain.listedAt || new Date(captain.listedAt) < oneDayAgo) {
+        data.listedAt = new Date();
+      }
+    }
+    // Clear listedAt when unlisting
+    if (data.listed === false) {
+      data.listedAt = null;
+    }
+
     const updated = await prisma.captain.update({
       where: { id: captain.id },
       data,

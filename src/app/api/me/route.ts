@@ -53,6 +53,18 @@ export async function PATCH(request: Request) {
     if (bio !== undefined) data.bio = bio ?? null;
     if (previousClub !== undefined) data.previousClub = previousClub?.trim() || null;
 
+    // Bump listedAt if listing is on AND last bump was >24h ago (or never)
+    if (data.listed === true || (data.listed === undefined && player.listed)) {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      if (!player.listedAt || new Date(player.listedAt) < oneDayAgo) {
+        data.listedAt = new Date();
+      }
+    }
+    // Clear listedAt when unlisting
+    if (data.listed === false) {
+      data.listedAt = null;
+    }
+
     const updated = await prisma.player.update({
       where: { id: player.id },
       data,

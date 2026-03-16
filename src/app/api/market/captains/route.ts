@@ -27,8 +27,10 @@ export async function GET() {
         trialGroupLink: true,
         requirements: true,
         whatsappNumber: true,
+        listedAt: true,
+        updatedAt: true,
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ listedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
     });
 
     return NextResponse.json(
@@ -52,6 +54,7 @@ export async function GET() {
           requirements: c.requirements,
           whatsappLink,
           whatsappNumber: admin ? c.whatsappNumber : null,
+          listedAt: c.listedAt || c.updatedAt,
         };
       })
     );

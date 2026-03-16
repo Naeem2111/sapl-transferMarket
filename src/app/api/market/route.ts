@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 
     const players = await prisma.player.findMany({
       where,
-      orderBy: [{ updatedAt: "desc" }],
+      orderBy: [{ listedAt: { sort: "desc", nulls: "last" } }, { updatedAt: "desc" }],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include:
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
         preferredLeagues: string[];
         bio: string | null;
         previousClub: string | null;
-        updatedAt: Date;
+        listedAt: Date | null;
         whatsappLink?: string | null;
         whatsappNumber?: string | null;
         alreadyRequestedTrial?: boolean;
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
         preferredLeagues: parseLeagues(p.preferredLeagues),
         bio: p.bio,
         previousClub: p.previousClub,
-        updatedAt: p.updatedAt,
+        listedAt: p.listedAt || p.updatedAt,
       };
 
       if (captain) {
