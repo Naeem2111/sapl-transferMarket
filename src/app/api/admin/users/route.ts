@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   try {
     const players = await prisma.player.findMany({
       where: { authPhone: { not: null } }, // only registered players
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ createdAt: "desc" }, { updatedAt: "desc" }],
     });
 
     const captains = await prisma.captain.findMany({
