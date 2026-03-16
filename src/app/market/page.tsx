@@ -225,9 +225,11 @@ export default function MarketPage() {
     return () => clearInterval(timer);
   }, [copiedTime]);
 
+  const marketUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://sapl-transfer-market.vercel.app"}/market`;
+
   function buildPlayerPost(p: MarketPlayer): string {
     const name = [p.firstName, p.lastName].filter(Boolean).join(" ") || p.gamertag || "Player";
-    const number = p.whatsappNumber ? `@${p.whatsappNumber}` : "—";
+    const number = p.whatsappNumber ? `@+${p.whatsappNumber.replace(/^\+/, "")}` : "—";
     return [
       "*Looking For A Team*",
       `Name: ${name}`,
@@ -239,11 +241,13 @@ export default function MarketPage() {
       `Previous Club: ${p.previousClub || "Free Agent"}`,
       `Extra: ${p.bio || "—"}`,
       `Number: ${number}`,
+      "",
+      `Find more on SAPL Transfer Market: ${marketUrl}`,
     ].join("\n");
   }
 
   function buildCaptainPost(c: CaptainCard): string {
-    const number = c.whatsappNumber ? `@${c.whatsappNumber}` : "—";
+    const number = c.whatsappNumber ? `@+${c.whatsappNumber.replace(/^\+/, "")}` : "—";
     return [
       "*Looking For A Player*",
       `Team: ${c.teamName || "—"}`,
@@ -256,6 +260,8 @@ export default function MarketPage() {
       `Requirements: ${c.requirements || "—"}`,
       `Trial Group Link: ${c.trialGroupLink || "—"}`,
       `Extra: —`,
+      "",
+      `Find more on SAPL Transfer Market: ${marketUrl}`,
     ].join("\n");
   }
 

@@ -401,6 +401,7 @@ export default function AdminUsersPage() {
                   { value: "", label: "Select role" },
                   { value: "Starter", label: "Starter" },
                   { value: "Rotation", label: "Rotation" },
+                  { value: "Both", label: "Both" },
                 ],
                 platform: [
                   { value: "", label: "Select platform" },
