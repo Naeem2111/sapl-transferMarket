@@ -232,6 +232,7 @@ export default function MarketPage() {
     const number = p.whatsappNumber ? `@+${p.whatsappNumber.replace(/^\+/, "")}` : "—";
     return [
       "*Looking For A Team*",
+      "",
       `Name: ${name}`,
       `Gamertag: ${p.gamertag || "—"}`,
       `League: ${p.preferredLeagues.join(", ") || "—"}`,
@@ -250,6 +251,7 @@ export default function MarketPage() {
     const number = c.whatsappNumber ? `@+${c.whatsappNumber.replace(/^\+/, "")}` : "—";
     return [
       "*Looking For A Player*",
+      "",
       `Team: ${c.teamName || "—"}`,
       `Number: ${number}`,
       `League: ${c.preferredLeagues.join(", ") || "—"}`,
