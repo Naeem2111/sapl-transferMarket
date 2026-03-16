@@ -13,6 +13,7 @@ export async function GET() {
       id: true,
       email: true,
       teamName: true,
+      authPhone: true,
       approvalStatus: true,
       listed: true,
       createdAt: true,

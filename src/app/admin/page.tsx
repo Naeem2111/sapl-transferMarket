@@ -9,6 +9,7 @@ type CaptainRow = {
   id: string;
   email: string;
   teamName: string | null;
+  authPhone: string | null;
   approvalStatus: string;
   listed: boolean;
   createdAt: string;
@@ -93,7 +94,7 @@ export default function AdminPage() {
   const q = search.trim().toLowerCase();
   function matchesCaptain(c: CaptainRow): boolean {
     if (!q) return true;
-    return [c.email, c.teamName].filter(Boolean).join(" ").toLowerCase().includes(q);
+    return [c.email, c.teamName, c.authPhone].filter(Boolean).join(" ").toLowerCase().includes(q);
   }
   function matchesPlayerReg(r: PlayerRegRow): boolean {
     if (!q) return true;
@@ -190,6 +191,7 @@ export default function AdminPage() {
             <div>
               <p className="font-medium text-[var(--text)]">{c.teamName || "(no team name)"}</p>
               <p className="text-sm text-[var(--muted)]">{c.email}</p>
+              {c.authPhone && <p className="text-sm text-[var(--muted)]">+{c.authPhone}</p>}
               <p className="text-xs text-[var(--muted)]">Registered {new Date(c.createdAt).toLocaleDateString()}</p>
             </div>
             <div className="flex items-center gap-2">

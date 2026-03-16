@@ -64,6 +64,8 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"players" | "captains">("players");
+  const [playerPage, setPlayerPage] = useState(1);
+  const [capPage, setCapPage] = useState(1);
   const [editing, setEditing] = useState<EditingUser | null>(null);
   const [editPlatforms, setEditPlatforms] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -96,6 +98,33 @@ export default function AdminUsersPage() {
     const timer = setTimeout(fetchUsers, 300); // debounce search
     return () => clearTimeout(timer);
   }, [fetchUsers]);
+
+  // Reset pages when search changes
+  useEffect(() => {
+    setPlayerPage(1);
+    setCapPage(1);
+  }, [search]);
+
+  const PAGE_SIZE = 20;
+  const paginatedPlayers = players.slice((playerPage - 1) * PAGE_SIZE, playerPage * PAGE_SIZE);
+  const paginatedCaptains = captains.slice((capPage - 1) * PAGE_SIZE, capPage * PAGE_SIZE);
+  const playerTotalPages = Math.max(1, Math.ceil(players.length / PAGE_SIZE));
+  const capTotalPages = Math.max(1, Math.ceil(captains.length / PAGE_SIZE));
+
+  function Pagination({ page, totalPages, total, onPageChange, label }: { page: number; totalPages: number; total: number; onPageChange: (p: number) => void; label: string }) {
+    if (totalPages <= 1) return null;
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
+        <p className="text-sm text-[var(--muted)]">Page {page} of {totalPages} — {total} {label}</p>
+        <div className="flex gap-2">
+          <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)}
+            className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text)] hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed">← Previous</button>
+          <button type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}
+            className="rounded border border-[var(--border)] px-3 py-1.5 text-sm text-[var(--text)] hover:bg-white/5 disabled:opacity-40 disabled:cursor-not-allowed">Next →</button>
+        </div>
+      </div>
+    );
+  }
 
   function startEditPlayer(p: PlayerUser) {
     setEditing({
@@ -246,8 +275,9 @@ export default function AdminUsersPage() {
               {players.length === 0 ? (
                 <p className="text-sm text-[var(--muted)]">No registered players found.</p>
               ) : (
+                <>
                 <ul className="space-y-3">
-                  {players.map((p) => (
+                  {paginatedPlayers.map((p) => (
                     <li key={p.id} className="card">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -276,6 +306,8 @@ export default function AdminUsersPage() {
                     </li>
                   ))}
                 </ul>
+                <Pagination page={playerPage} totalPages={playerTotalPages} total={players.length} onPageChange={setPlayerPage} label="players" />
+                </>
               )}
             </div>
           )}
@@ -286,8 +318,9 @@ export default function AdminUsersPage() {
               {captains.length === 0 ? (
                 <p className="text-sm text-[var(--muted)]">No captains found.</p>
               ) : (
+                <>
                 <ul className="space-y-3">
-                  {captains.map((c) => (
+                  {paginatedCaptains.map((c) => (
                     <li key={c.id} className="card">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
@@ -317,6 +350,8 @@ export default function AdminUsersPage() {
                     </li>
                   ))}
                 </ul>
+                <Pagination page={capPage} totalPages={capTotalPages} total={captains.length} onPageChange={setCapPage} label="captains" />
+                </>
               )}
             </div>
           )}

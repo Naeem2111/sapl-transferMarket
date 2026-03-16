@@ -4,8 +4,6 @@ import { getCurrentAdmin } from "@/lib/auth";
 import { parsePositions } from "@/lib/positions";
 import { parseLeagues } from "@/lib/leagues";
 
-const DEFAULT_PAGE_SIZE = 20;
-
 // GET /api/admin/users — list all registered players and captains (with pagination)
 export async function GET(request: Request) {
   const admin = await getCurrentAdmin();
@@ -15,8 +13,6 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search")?.trim().toLowerCase() || "";
-  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-  const limit = Math.max(1, Math.min(100, parseInt(searchParams.get("limit") || String(DEFAULT_PAGE_SIZE), 10)));
 
   try {
     const players = await prisma.player.findMany({
@@ -93,26 +89,11 @@ export async function GET(request: Request) {
       });
     }
 
-    // Totals (after filtering, before pagination)
-    const playerTotal = playerList.length;
-    const captainTotal = captainList.length;
-    const playerTotalPages = Math.max(1, Math.ceil(playerTotal / limit));
-    const captainTotalPages = Math.max(1, Math.ceil(captainTotal / limit));
-
-    // Paginate
-    const skip = (page - 1) * limit;
-    const paginatedPlayers = playerList.slice(skip, skip + limit);
-    const paginatedCaptains = captainList.slice(skip, skip + limit);
-
     return NextResponse.json({
-      players: paginatedPlayers,
-      captains: paginatedCaptains,
-      playerTotal,
-      captainTotal,
-      playerTotalPages,
-      captainTotalPages,
-      page,
-      limit,
+      players: playerList,
+      captains: captainList,
+      playerTotal: playerList.length,
+      captainTotal: captainList.length,
     });
   } catch (e) {
     console.error(e);
