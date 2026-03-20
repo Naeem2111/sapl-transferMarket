@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ConfirmModal from "@/components/ConfirmModal";
+import { formatPhoneDisplay } from "@/lib/phone";
 
 type CaptainRow = {
   id: string;
@@ -191,7 +192,7 @@ export default function AdminPage() {
             <div>
               <p className="font-medium text-[var(--text)]">{c.teamName || "(no team name)"}</p>
               <p className="text-sm text-[var(--muted)]">{c.email}</p>
-              {c.authPhone && <p className="text-sm text-[var(--muted)]">+{c.authPhone}</p>}
+              {c.authPhone && <p className="text-sm text-[var(--muted)]">{formatPhoneDisplay(c.authPhone)}</p>}
               <p className="text-xs text-[var(--muted)]">Registered {new Date(c.createdAt).toLocaleDateString()}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -264,7 +265,7 @@ export default function AdminPage() {
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <p className="font-medium text-[var(--text)]">{r.firstName} {r.lastName}</p>
-                            <p className="text-sm text-[var(--muted)]">+{r.dialingCode} {r.phoneNumber}</p>
+                            <p className="text-sm text-[var(--muted)]">{formatPhoneDisplay(r.dialingCode + r.phoneNumber.replace(/^0/, ""))}</p>
                             {r.email && <p className="text-sm text-[var(--muted)]">{r.email}</p>}
                             {r.teamName && <p className="text-sm text-[var(--muted)]">Team: {r.teamName}</p>}
                             {r.personId && <p className="text-sm font-mono text-[var(--accent)]">Person ID: {r.personId}</p>}
@@ -312,7 +313,7 @@ export default function AdminPage() {
                             <div className="flex flex-wrap items-start justify-between gap-3">
                               <div>
                                 <p className="font-medium text-[var(--text)]">{r.firstName} {r.lastName}</p>
-                                <p className="text-sm text-[var(--muted)]">+{r.dialingCode} {r.phoneNumber}</p>
+                                <p className="text-sm text-[var(--muted)]">{formatPhoneDisplay(r.dialingCode + r.phoneNumber.replace(/^0/, ""))}</p>
                                 {r.email && <p className="text-sm text-[var(--muted)]">{r.email}</p>}
                                 {r.teamName && <p className="text-sm text-[var(--muted)]">Team: {r.teamName}</p>}
                                 {r.personId && <p className="text-sm font-mono text-[var(--muted)]">Submitted Person ID: {r.personId}</p>}

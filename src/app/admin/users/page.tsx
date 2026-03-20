@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Toast from "@/components/Toast";
 import { PLATFORMS } from "@/lib/platforms";
+import { formatPhoneDisplay } from "@/lib/phone";
 
 type PlayerUser = {
   type: "player";
@@ -136,7 +137,7 @@ export default function AdminUsersPage() {
         lastName: p.lastName || "",
         gamertag: p.gamertag || "",
         email: p.email || "",
-        authPhone: p.authPhone ? `+${p.authPhone}` : (p.mobilePhone || ""),
+        authPhone: formatPhoneDisplay(p.authPhone || p.mobilePhone),
         teams: p.teams || "",
         role: p.role || "",
         platform: p.platform || "",
@@ -286,7 +287,7 @@ export default function AdminUsersPage() {
                             <p className="text-sm text-[var(--muted)]">GT: {p.gamertag}</p>
                           )}
                           <p className="text-sm text-[var(--muted)]">
-                            {[p.authPhone && `+${p.authPhone}`, p.email].filter(Boolean).join(" · ")}
+                            {[formatPhoneDisplay(p.authPhone), p.email].filter(Boolean).join(" · ")}
                           </p>
                           {p.teams && (
                             <p className="text-sm text-[var(--muted)]">Team: {p.teams}</p>

@@ -53,6 +53,26 @@ export default function AdminImportPage() {
         {/* Styled file drop area */}
         <div
           onClick={() => fileRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const droppedFile = e.dataTransfer.files?.[0];
+            if (droppedFile && droppedFile.name.endsWith(".csv")) {
+              setFile(droppedFile);
+              setError("");
+              setResult(null);
+            } else {
+              setError("Please drop a .csv file");
+            }
+          }}
           className="cursor-pointer rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--card)] p-8 text-center transition hover:border-[var(--accent)] hover:bg-[var(--accent)]/5"
         >
           <input
