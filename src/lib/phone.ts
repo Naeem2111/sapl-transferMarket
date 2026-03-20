@@ -265,3 +265,54 @@ export const DIALING_CODES = [
   { code: "260", country: "Zambia", label: "+260 Zambia" },
   { code: "263", country: "Zimbabwe", label: "+263 Zimbabwe" },
 ];
+
+/**
+ * Format a phone number for display: +CC XX XXX XXXX
+ * Handles raw digits, local numbers (0XX), and international numbers.
+ * Always returns +CC format. If no country code detected, assumes +27 (SA).
+ */
+export function formatPhoneDisplay(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const digits = phone.replace(/\D/g, "");
+  if (!digits || digits.length < 7) return digits ? `+${digits}` : "";
+
+  // If starts with 0, assume SA local
+  let intlDigits = digits;
+  if (digits.startsWith("0") && digits.length === 10) {
+    intlDigits = "27" + digits.slice(1);
+  }
+
+  // Find country code by matching against known codes (try longest first)
+  let codeLen = 0;
+  for (const len of [4, 3, 2, 1]) {
+    const prefix = intlDigits.slice(0, len);
+    if (DIALING_CODES.some((d) => d.code === prefix)) {
+      codeLen = len;
+      break;
+    }
+  }
+
+  // If no code found and 9-10 digits, try prepending 27
+  if (codeLen === 0 && intlDigits.length >= 9 && intlDigits.length <= 10) {
+    intlDigits = "27" + intlDigits;
+    codeLen = 2;
+  }
+
+  if (codeLen === 0) {
+    const groups = intlDigits.match(/.{1,3}/g) || [intlDigits];
+    return `+${groups.join(" ")}`;
+  }
+
+  const code = intlDigits.slice(0, codeLen);
+  const rest = intlDigits.slice(codeLen);
+
+  if (rest.length <= 7) {
+    const groups = rest.match(/.{1,3}/g) || [];
+    return `+${code} ${groups.join(" ")}`;
+  }
+
+  const part1 = rest.slice(0, 2);
+  const part2 = rest.slice(2, 5);
+  const part3 = rest.slice(5);
+  return `+${code} ${part1} ${part2} ${part3}`.replace(/\s+$/, "");
+}
