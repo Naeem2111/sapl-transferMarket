@@ -3,8 +3,8 @@ import "./globals.css";
 import Header from "@/components/Header";
 
 export const metadata: Metadata = {
-  title: "SAPL Transfer Market",
-  description: "Pro Clubs transfer market – list yourself and find players",
+  title: "SAPL has moved",
+  description: "The SAPL transfer market has moved to the new SAPL platform.",
 };
 
 export default function RootLayout({
