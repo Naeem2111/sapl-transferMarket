@@ -12,6 +12,8 @@ export default function Header() {
   const [role, setRole] = useState<Role>(null);
 
   useEffect(() => {
+    if (pathname === "/") return;
+
     Promise.all([
       fetch("/api/me").then((r) => r.json()),
       fetch("/api/captain/me").then((r) => r.json()),
@@ -32,6 +34,8 @@ export default function Header() {
     router.push("/");
     router.refresh();
   }
+
+  if (pathname === "/") return null;
 
   return (
     <header className="border-b border-[var(--border)] bg-[var(--card)]">
